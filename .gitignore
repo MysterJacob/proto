@@ -1,2 +1,5 @@
 bin/
 cutest-1.5/
+compile_commands.json
+tests/CuTest.h
+.cache
