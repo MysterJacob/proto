@@ -1,9 +1,12 @@
+#ifndef protoh
+#define protoh
+
 #define byte unsigned char
 #define PACKET_HEADER_LENGTH 20
 #define MAGIC1 0x57
 #define MAGIC2 0x5f
 
-enum type {
+enum datatype {
   TYPE_INT8    = 0,
   TYPE_INT16   = 1,
   TYPE_INT32   = 2,
@@ -17,6 +20,13 @@ enum type {
   TYPE_STRING  = 10
 };
 
+enum errorCodes {
+  PERR_MALLOC_FAILED = 1,
+  PERR_UNKNOWN_ID    = 2,
+};
+
+static unsigned char typeSizes[11] = {1, 2, 4, 8, 0, 1, 2, 4, 8, 0, 0};
+
 typedef volatile struct {
   unsigned int length;
   unsigned int id;
@@ -25,15 +35,15 @@ typedef volatile struct {
   unsigned int checksum;
 } PacketHeader;
 
-#ifndef PACKET_COUNT
-#define PACKET_COUNT 0
-#endif
+extern const byte* const parserTable[];
 
-extern unsigned char* parserTable[PACKET_COUNT];
-
+void loadPacketTable();
 void processByte(byte data);
-PacketHeader* getLastHeader();
 void resetParsing();
 
-void* getLastPacket();
+const PacketHeader* getLastHeader();
+const void* getLastPacket();
 byte* generatePacket(unsigned int id, void* data);
+
+int getLastErrorCode();
+#endif

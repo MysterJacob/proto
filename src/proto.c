@@ -1,50 +1,164 @@
 #include "proto.h"
 
-#include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
 
+unsigned int packetCount = 0;
 static union {
   PacketHeader header;
   byte data[PACKET_HEADER_LENGTH];
-} header;
+} headerData = {};
+
+const byte* packetData;
+byte* packetWriterHead;
+
+const byte* lastPacketData;
+
+PacketHeader lastHeader = {};
+
+int lastErrorCode = 0;
+
+unsigned int packetsReceived = 0;
+
+static unsigned int* packetStaticSizes = 0;
 
 /*
  * -2 -> First magic byte
  * -1 -> Second magic byte
  */
-int currentHeaderSize = -2;
+int currentlyParsedPacketLength = 0;
+int currentlyParsedPacketId     = 0;
+int currentPacketSize           = 0;
 
-void processByte(byte data)
+void reportError(int code)
 {
-  if(currentHeaderSize >= PACKET_HEADER_LENGTH) {
-    currentHeaderSize = -2;
-  }
-  switch(currentHeaderSize) {
-    case -2:
-      if(data == MAGIC1) {
-        currentHeaderSize++;
-      }
-      break;
-    case -1:
-      if(data == MAGIC2) {
-        currentHeaderSize++;
-      }
-      break;
-    default:
-      header.data[currentHeaderSize++] = data;
-      break;
-  }
+  resetParsing();
+  lastErrorCode = code;
 }
 
-PacketHeader *getLastHeader()
+void allocateMemoryForPacketData()
 {
-  if(currentHeaderSize == 20) {
-    return &header.header;
-  } else {
-    return NULL;
+  if(currentlyParsedPacketLength == 0) {
+    return;
+  }
+  packetData = malloc(currentlyParsedPacketLength);
+  if(packetData == 0) {
+    reportError(PERR_MALLOC_FAILED);
+    return;
+  }
+  packetWriterHead = (byte*)packetData;
+}
+
+void parseHeaderData(byte data)
+{
+  headerData.data[currentPacketSize++] = data;
+}
+
+void parsePacketData(byte data)
+{
+  *(packetWriterHead++) = data;
+  currentPacketSize++;
+}
+
+enum {
+  PSTATUS_DETECT     = 0,
+  PSTATUS_HEADER     = 1,
+  PSTATUS_STATICDATA = 2,
+} parsingStatus      = PSTATUS_DETECT;
+unsigned short magic = 0x0;
+void processByte(byte data)
+{
+  switch(parsingStatus) {
+    case PSTATUS_DETECT:
+      magic = (magic << 8) & 0xFFFF;
+      magic |= data;
+      if((magic & 0xFF) == MAGIC2 && (magic >> 8) == MAGIC1) {
+        parsingStatus = PSTATUS_HEADER;
+      }
+      break;
+    case PSTATUS_HEADER:
+      parseHeaderData(data);
+
+      if(currentPacketSize >= PACKET_HEADER_LENGTH) {
+        currentlyParsedPacketLength = headerData.header.length;
+        currentlyParsedPacketId     = headerData.header.id;
+        if(currentlyParsedPacketId >= packetCount) {
+          reportError(PERR_UNKNOWN_ID);
+          return;
+        }
+
+        allocateMemoryForPacketData();
+
+        parsingStatus = PSTATUS_STATICDATA;
+      }
+      break;
+    case PSTATUS_STATICDATA:
+      parsePacketData(data);
+      break;
+  }
+  // For now static, later on dynamic sizes will be included
+  if(parsingStatus > PSTATUS_HEADER &&
+     currentPacketSize >= packetStaticSizes[currentlyParsedPacketId]) {
+    packetsReceived++;
+    lastHeader     = headerData.header;
+    lastPacketData = packetData;
+    resetParsing();
   }
 }
 
 void resetParsing()
 {
-  currentHeaderSize = -2;
+  parsingStatus               = PSTATUS_DETECT;
+  currentlyParsedPacketId     = 0;
+  currentlyParsedPacketLength = 0;
+  currentPacketSize           = 0;
+  if(lastPacketData != packetData) {
+    free((void*)packetData);
+  }
+}
+
+void loadPacketTable()
+{
+  packetCount = 0;
+  while(parserTable[packetCount]) {
+    packetCount++;
+  }
+
+  if(packetStaticSizes) {
+    free(packetStaticSizes);
+  }
+
+  packetStaticSizes = malloc(packetCount * sizeof(int));
+  if(packetStaticSizes == 0) {
+    reportError(PERR_MALLOC_FAILED);
+    return;
+  }
+
+  for(int i = 0; i < packetCount; i++) {
+    const byte* ptr                = (const byte*)parserTable[i];
+    packetStaticSizes[i] = PACKET_HEADER_LENGTH;
+    while(*ptr != 0xFF) {
+      int fieldType = *ptr;
+      packetStaticSizes[i] += typeSizes[fieldType];
+      ptr += 1;
+    }
+  }
+}
+
+const PacketHeader* getLastHeader()
+{
+  if(packetsReceived == 0) {
+    return 0;
+  }
+  return &lastHeader;
+}
+
+const void* getLastPacket()
+{
+  return lastPacketData;
+}
+
+int getLastErrorCode()
+{
+  return lastErrorCode;
 }
