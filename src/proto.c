@@ -1,26 +1,25 @@
 #include "proto.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-unsigned int packetCount = 0;
+unsigned int packetCount               = 0;
+static unsigned int* packetStaticSizes = 0;
+
 static union {
   PacketHeader header;
   byte data[PACKET_HEADER_LENGTH];
-} headerData = {};
+} headerData            = {};
+PacketHeader lastHeader = {};
 
 const byte* packetData;
 byte* packetWriterHead;
-
 const byte* lastPacketData;
-
-PacketHeader lastHeader = {};
 
 int lastErrorCode = 0;
 
 unsigned int packetsReceived = 0;
-
-static unsigned int* packetStaticSizes = 0;
+unsigned int packetsSend     = 0;
 
 /*
  * -2 -> First magic byte
@@ -58,6 +57,18 @@ void parsePacketData(byte data)
 {
   *(packetWriterHead++) = data;
   currentPacketSize++;
+}
+
+void receivePacket()
+{
+  if(currentPacketSize - PACKET_HEADER_LENGTH != headerData.header.length) {
+    reportError(PERR_LENGTH_MISMATCH);
+    return;
+  }
+  packetsReceived++;
+  lastHeader     = headerData.header;
+  lastPacketData = packetData;
+  resetParsing();
 }
 
 enum {
@@ -98,11 +109,8 @@ void processByte(byte data)
   }
   // For now static, later on dynamic sizes will be included
   if(parsingStatus > PSTATUS_HEADER &&
-     currentPacketSize >= packetStaticSizes[currentlyParsedPacketId]) {
-    packetsReceived++;
-    lastHeader     = headerData.header;
-    lastPacketData = packetData;
-    resetParsing();
+     currentPacketSize == packetStaticSizes[currentlyParsedPacketId]) {
+    receivePacket();
   }
 }
 
@@ -112,9 +120,10 @@ void resetParsing()
   currentlyParsedPacketId     = 0;
   currentlyParsedPacketLength = 0;
   currentPacketSize           = 0;
-  if(lastPacketData != packetData) {
+  if(lastPacketData != packetData && packetData != 0) {
     free((void*)packetData);
   }
+  packetData = 0;
 }
 
 void loadPacketTable()
@@ -135,7 +144,7 @@ void loadPacketTable()
   }
 
   for(int i = 0; i < packetCount; i++) {
-    const byte* ptr                = (const byte*)parserTable[i];
+    const byte* ptr      = (const byte*)parserTable[i];
     packetStaticSizes[i] = PACKET_HEADER_LENGTH;
     while(*ptr != 0xFF) {
       int fieldType = *ptr;

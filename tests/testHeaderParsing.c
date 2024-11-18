@@ -46,7 +46,7 @@ void TestDetectingMultipleHeaders(CuTest *tc)
     PacketHeader ph;
     byte data[PACKET_HEADER_LENGTH];
   } testHeader = {
-      .ph = {.length    = 0xA,
+      .ph = {.length    = 0,
              .id        = 0x0,
              .seqNumber = 0,
              .ackNumber = 0,

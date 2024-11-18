@@ -21,8 +21,9 @@ enum datatype {
 };
 
 enum errorCodes {
-  PERR_MALLOC_FAILED = 1,
-  PERR_UNKNOWN_ID    = 2,
+  PERR_MALLOC_FAILED   = 1,
+  PERR_UNKNOWN_ID      = 2,
+  PERR_LENGTH_MISMATCH = 3,
 };
 
 static unsigned char typeSizes[11] = {1, 2, 4, 8, 0, 1, 2, 4, 8, 0, 0};
