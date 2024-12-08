@@ -31,7 +31,7 @@ void TestDetectingSimpleHeader(CuTest *tc)
   }
   const PacketHeader *header = getLastHeader();
   CuAssertTrue(tc, header != 0);
-  CuAssertTrue(tc, getLastErrorCode() == 0);
+  CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertIntEquals(tc, testHeader.ph.length, header->length);
   CuAssertIntEquals(tc, testHeader.ph.length, header->length);
   CuAssertIntEquals(tc, testHeader.ph.length, header->length);
@@ -62,7 +62,7 @@ void TestDetectingMultipleHeaders(CuTest *tc)
     }
     const PacketHeader *header = getLastHeader();
     CuAssertTrue(tc, header != 0);
-    CuAssertTrue(tc, getLastErrorCode() == 0);
+    CuAssertIntEquals(tc, 0, getLastErrorCode());
     CuAssertIntEquals(tc, testHeader.ph.seqNumber, header->seqNumber);
     CuAssertIntEquals(tc, testHeader.ph.ackNumber, header->ackNumber);
   }

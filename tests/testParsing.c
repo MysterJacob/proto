@@ -3,21 +3,17 @@
 #include <stdlib.h>
 
 #include "CuTest.h"
+#include "config.h"
 #include "proto.h"
 
 void TestSimpleParsing(CuTest *tc)
 {
   loadPacketTable();
   resetParsing();
-  typedef struct {
-    char c1;
-    short c2;
-    int c3;
-  } s1;
   union {
     volatile struct {
       PacketHeader header;
-      s1 packet;
+      TestPacket1 packet;
     } packet;
     const byte data[27];
   } data = {
@@ -35,19 +31,20 @@ void TestSimpleParsing(CuTest *tc)
   }
   const PacketHeader *ch = getLastHeader();
   CuAssertTrue(tc, ch != 0);
+  CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertIntEquals(tc, data.packet.header.length, ch->length);
   CuAssertIntEquals(tc, data.packet.header.id, ch->id);
   CuAssertIntEquals(tc, data.packet.header.seqNumber, ch->seqNumber);
   CuAssertIntEquals(tc, data.packet.header.ackNumber, ch->ackNumber);
   CuAssertIntEquals(tc, data.packet.header.checksum, ch->checksum);
 
-  const s1 *packet = getLastPacket();
+  const TestPacket1 *packet = getLastPacket();
 
-  CuAssertTrue(tc, getLastErrorCode() == 0);
+  CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertTrue(tc, packet != 0);
-  CuAssertIntEquals(tc, data.packet.packet.c1, packet->c1);
-  CuAssertIntEquals(tc, data.packet.packet.c2, packet->c2);
-  CuAssertIntEquals(tc, data.packet.packet.c3, packet->c3);
+  CuAssertIntEquals(tc, data.packet.packet.sample8, packet->sample8);
+  CuAssertIntEquals(tc, data.packet.packet.sample16, packet->sample16);
+  CuAssertIntEquals(tc, data.packet.packet.sample32, packet->sample32);
 
   free((void *)packet);
 }

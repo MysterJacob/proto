@@ -50,6 +50,7 @@ $(BIN_DIR)/test/AllTests.c: $(BIN_DIR)/test/make-tests.sh
 	$(shell cd $(BIN_DIR)/test ; ./make-tests.sh > AllTests.c)
 
 $(BIN_DIR)/test/test.o: $(OBJS) $(BIN_DIR)/test/AllTests.c
+	./creator.sh tests/test_config > tests/config.h
 	$(CC) -o $(BIN_DIR)/test/test.o \
 	-I$(CUTEST_DIR) \
 	-I$(INCLUDE_DIR) \

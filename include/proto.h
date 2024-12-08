@@ -20,6 +20,18 @@ enum datatype {
   TYPE_STRING  = 10
 };
 
+#define INT8 char
+#define INT16 short
+#define INT32 int
+#define INT64 long int
+#define VARINT long int
+#define UINT8 unsigned char
+#define UINT16 unsigned short
+#define UINT32 unsigned int
+#define UINT64 unsigned long int
+#define VARUINT unsigned long int
+#define STRING char*
+
 enum errorCodes {
   PERR_MALLOC_FAILED   = 1,
   PERR_UNKNOWN_ID      = 2,
