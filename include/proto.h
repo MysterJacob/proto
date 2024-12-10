@@ -40,23 +40,25 @@ enum errorCodes {
 
 static unsigned char typeSizes[11] = {1, 2, 4, 8, 0, 1, 2, 4, 8, 0, 0};
 
-typedef volatile struct {
+typedef volatile struct __attribute((packed)){
   unsigned int length;
   unsigned int id;
   unsigned int seqNumber;
   unsigned int ackNumber;
-  unsigned int checksum;
+  unsigned short checksum;
 } PacketHeader;
 
 extern const byte* const parserTable[];
 
 void loadPacketTable();
+
 void processByte(byte data);
-void resetParsing();
+
+byte* generatePacket(unsigned int id, void* data, unsigned int* size);
 
 const PacketHeader* getLastHeader();
 const void* getLastPacket();
-byte* generatePacket(unsigned int id, void* data);
 
+void resetParsing();
 int getLastErrorCode();
 #endif

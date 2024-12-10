@@ -57,7 +57,7 @@ void TestDetectingMultipleHeaders(CuTest *tc)
     testHeader.ph.ackNumber = 0xFFFF - i;
     processByte(0x57);
     processByte(0x5f);
-    for(int i = 0; i < PACKET_HEADER_LENGTH; i++) {
+    for(int i = 0; i < PACKET_HEADER_LENGTH - 2; i++) {
       processByte(testHeader.data[i]);
     }
     const PacketHeader *header = getLastHeader();

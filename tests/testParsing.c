@@ -1,12 +1,13 @@
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "CuTest.h"
 #include "config.h"
 #include "proto.h"
 
-void TestSimpleParsing(CuTest *tc)
+void TestStaticParsing(CuTest *tc)
 {
   loadPacketTable();
   resetParsing();
@@ -26,10 +27,11 @@ void TestSimpleParsing(CuTest *tc)
   };
   processByte(MAGIC1);
   processByte(MAGIC2);
-  for(int i = 0; i < 27; i++) {
+  for(int i = 0; i < 25; i++) {
     processByte(data.data[i]);
   }
   const PacketHeader *ch = getLastHeader();
+
   CuAssertTrue(tc, ch != 0);
   CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertIntEquals(tc, data.packet.header.length, ch->length);
@@ -38,7 +40,7 @@ void TestSimpleParsing(CuTest *tc)
   CuAssertIntEquals(tc, data.packet.header.ackNumber, ch->ackNumber);
   CuAssertIntEquals(tc, data.packet.header.checksum, ch->checksum);
 
-  const TestPacket1 *packet = getLastPacket();
+  TestPacket1 *packet = getLastPacket();
 
   CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertTrue(tc, packet != 0);

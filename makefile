@@ -48,6 +48,7 @@ $(BIN_DIR)/test/make-tests.sh: $(TESTS)
 
 $(BIN_DIR)/test/AllTests.c: $(BIN_DIR)/test/make-tests.sh
 	$(shell cd $(BIN_DIR)/test ; ./make-tests.sh > AllTests.c)
+	cat $(wildcard $(TESTS_DIR)/*.c) >> $(BIN_DIR)/test/AllTests.c
 
 $(BIN_DIR)/test/test.o: $(OBJS) $(BIN_DIR)/test/AllTests.c
 	./creator.sh tests/test_config > tests/config.h
@@ -57,8 +58,7 @@ $(BIN_DIR)/test/test.o: $(OBJS) $(BIN_DIR)/test/AllTests.c
 	-I$(TESTS_DIR) \
 	$(CUTEST_DIR)/CuTest.c \
 	$(BIN_DIR)/test/AllTests.c \
-	$(OBJS) \
-	$(wildcard $(TESTS_DIR)/*.c)
+	$(OBJS)
 
 test: $(BIN_DIR)/test/test.o
 	chmod +x $(BIN_DIR)/test/test.o
