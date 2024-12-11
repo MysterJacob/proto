@@ -9,7 +9,7 @@ static unsigned int* packetStaticSizes = 0;
 
 static union {
   PacketHeader header;
-  byte data[PACKET_HEADER_LENGTH];
+  byte data[sizeof(PacketHeader)];
 } parsedHeaderData          = {};
 PacketHeader lastHeaderData = {};
 
@@ -19,8 +19,8 @@ const byte* lastPacketData;
 
 int lastErrorCode = 0;
 
-unsigned int totalPacketsReceived = 0;
 unsigned int totalPacketsSent     = 0;
+unsigned int totalPacketsReceived = 0;
 
 int currentlyParsedPacketLength = 0;
 int currentlyParsedPacketId     = 0;
@@ -91,7 +91,7 @@ void finishReceiving()
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
-  totalPacketsReceived++;
+  totalPacketsReceived += 1;
   lastHeaderData = parsedHeaderData.header;
   lastPacketData = parsedPacketData;
   resetParsing();
@@ -114,7 +114,6 @@ void processByte(byte data)
       }
       break;
     case PSTATUS_HEADER:
-      // FIXME
       parseHeaderData(data);
 
       if(currentPacketSize >= sizeof(PacketHeader)) {
@@ -158,6 +157,8 @@ byte* generatePacket(unsigned int id, void* data, unsigned int* size)
       .ackNumber = totalPacketsReceived,
       .checksum  = 0xCCCC,
   };
+  printf("%u %u\n", header.seqNumber, totalPacketsSent);
+  printf("%u %u\n", header.ackNumber, totalPacketsReceived);
 
   byte* packetData = (byte*)malloc(totalSize * sizeof(byte));
   packetData[0]    = MAGIC1;
@@ -169,7 +170,7 @@ byte* generatePacket(unsigned int id, void* data, unsigned int* size)
   // Dynamic data
 
   *size = totalSize;
-  totalPacketsSent += 1;
+//   totalPacketsSent += 1;
   return packetData;
 }
 

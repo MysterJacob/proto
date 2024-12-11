@@ -42,6 +42,7 @@ void TestAckSq(CuTest *tc)
   for(int i = 0; i < 0xFFFF; i++) {
     byte *rawData = generatePacket(0, (void *)&tp, &size);
     for(int h = 0; h < size; h++) {
+      printf("%02x ", rawData[h]);
       processByte(rawData[h]);
     }
 
