@@ -51,7 +51,7 @@ $(BIN_DIR)/test/AllTests.c: $(BIN_DIR)/test/make-tests.sh
 	cat $(wildcard $(TESTS_DIR)/*.c) >> $(BIN_DIR)/test/AllTests.c
 
 $(BIN_DIR)/test/test.o: $(OBJS) $(BIN_DIR)/test/AllTests.c
-	./creator.sh tests/test_config > tests/config.h
+	./creator.sh tests/test_config > tests/parser_config.h
 	$(CC) -o $(BIN_DIR)/test/test.o \
 	-I$(CUTEST_DIR) \
 	-I$(INCLUDE_DIR) \

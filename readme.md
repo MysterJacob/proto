@@ -3,4 +3,4 @@
 - [x] Generating static packets
 - [ ] Generating dynamic packets
 - [ ] CRC16
-- [ ] Fix endianness
+- [ ] ~Fix~ Multi endianness

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #include "CuTest.h"
-#include "config.h"
+#include "parser_config.h"
 #include "proto.h"
 
 void TestStaticGenerating(CuTest *tc)
@@ -37,25 +37,40 @@ void TestStaticGenerating(CuTest *tc)
 
 void TestAckSq(CuTest *tc)
 {
+  loadPacketTable();
+  resetParsing();
+
   TestPacket0 tp = {};
   unsigned int size;
+
+  byte *rawData = generatePacket(0, (void *)&tp, &size);
+  for(int h = 0; h < size; h++) {
+    processByte(rawData[h]);
+  }
+
+  CuAssertIntEquals(tc, 0, getLastErrorCode());
+
+  const void* received = getLastPacket();
+  const PacketHeader *header = getLastHeader();
+
+  const unsigned int baseSeq = header->seqNumber + 1;
+  const unsigned int baseAck = header->ackNumber + 1;
+
   for(int i = 0; i < 0xFFFF; i++) {
     byte *rawData = generatePacket(0, (void *)&tp, &size);
     for(int h = 0; h < size; h++) {
-      printf("%02x ", rawData[h]);
       processByte(rawData[h]);
     }
 
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-    const PacketHeader *header = getLastHeader();
     const void* received = getLastPacket();
-//     CuAssertTrue(tc, received != 0);
+    const PacketHeader *header = getLastHeader();
 
-    CuAssertIntEquals(tc, i, header->seqNumber);
-    CuAssertIntEquals(tc, i, header->ackNumber);
+    CuAssertIntEquals(tc, i + baseSeq, header->seqNumber);
+    CuAssertIntEquals(tc, i + baseAck, header->ackNumber);
 
     free((void *)rawData);
-//     free((void *)received);
+    free((void *)received);
   }
 }

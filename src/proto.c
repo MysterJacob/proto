@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
+#include "sanity.h"
+
 unsigned int definedPacketCount        = 0;
 static unsigned int* packetStaticSizes = 0;
 
@@ -84,14 +87,25 @@ void parsePacketData(byte data)
   currentPacketSize++;
 }
 
-void finishReceiving()
+void finishRecieiving()
 {
   if(currentPacketSize - sizeof(PacketHeader) !=
      parsedHeaderData.header.length) {
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
-  totalPacketsReceived += 1;
+#ifndef DISABLE_ACK_SEQ_CHECK
+  if(parsedHeaderData.header.seqNumber != totalPacketsReceived) {
+    reportError(PERR_SEQ_MISMATCH);
+    return;
+  }
+  if(parsedHeaderData.header.ackNumber != totalPacketsSent) {
+    reportError(PERR_ACK_MISMATCH);
+    return;
+  }
+#endif
+
+  totalPacketsReceived++;
   lastHeaderData = parsedHeaderData.header;
   lastPacketData = parsedPacketData;
   resetParsing();
@@ -136,7 +150,7 @@ void processByte(byte data)
   // For now static, later on dynamic sizes will be included
   if(parsingStatus > PSTATUS_HEADER &&
      currentPacketSize == packetStaticSizes[currentlyParsedPacketId] - 2) {
-    finishReceiving();
+    finishRecieiving();
   }
 }
 
@@ -157,8 +171,6 @@ byte* generatePacket(unsigned int id, void* data, unsigned int* size)
       .ackNumber = totalPacketsReceived,
       .checksum  = 0xCCCC,
   };
-  printf("%u %u\n", header.seqNumber, totalPacketsSent);
-  printf("%u %u\n", header.ackNumber, totalPacketsReceived);
 
   byte* packetData = (byte*)malloc(totalSize * sizeof(byte));
   packetData[0]    = MAGIC1;
@@ -170,7 +182,7 @@ byte* generatePacket(unsigned int id, void* data, unsigned int* size)
   // Dynamic data
 
   *size = totalSize;
-//   totalPacketsSent += 1;
+  totalPacketsSent += 1;
   return packetData;
 }
 

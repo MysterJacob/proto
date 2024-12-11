@@ -1,0 +1,2 @@
+#define DISABLE_ACK_SEQ_CHECK
+// #define DISABLE_CRC_CHECK

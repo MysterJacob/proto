@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 #include "CuTest.h"
-#include "proto.h"
+#include "parser_config.h"
 
 void TestDetectingSimpleHeader(CuTest *tc)
 {
