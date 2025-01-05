@@ -13,7 +13,7 @@ echo ""
 
 # Parser table
 awk '
-BEGIN {printf "const byte *const parserTable[] = {"} 
+BEGIN {printf "const byte *const parserTable[] = {"}
 {printf "%s_pte, ", $1} 
 END {print "0};"}' $1
 

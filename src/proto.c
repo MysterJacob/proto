@@ -58,7 +58,7 @@ void loadPacketTable()
     while(*ptr != 0xFF) {
       int fieldType = *ptr;
       packetStaticSizes[i] += typeSizes[fieldType];
-      ptr += 1;
+      ptr++;
     }
   }
 }
@@ -182,7 +182,7 @@ byte* generatePacket(unsigned int id, void* data, unsigned int* size)
   // Dynamic data
 
   *size = totalSize;
-  totalPacketsSent += 1;
+  totalPacketsSent++;
   return packetData;
 }
 
