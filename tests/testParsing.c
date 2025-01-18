@@ -4,8 +4,8 @@
 #include <stdlib.h>
 
 #include "CuTest.h"
-#include "parser_config.h"
 #include "proto.h"
+#include "packets.h"
 
 void TestStaticParsing(CuTest *tc)
 {

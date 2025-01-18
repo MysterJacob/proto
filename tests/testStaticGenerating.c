@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #include "CuTest.h"
-#include "parser_config.h"
+#include "packets.h"
 #include "proto.h"
 
 void TestStaticGenerating(CuTest *tc)
@@ -50,7 +50,7 @@ void TestAckSq(CuTest *tc)
 
   CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-  const void* received = getLastPacket();
+//   const void* received = getLastPacket();
   const PacketHeader *header = getLastHeader();
 
   const unsigned int baseSeq = header->seqNumber + 1;

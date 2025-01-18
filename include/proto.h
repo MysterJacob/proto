@@ -40,8 +40,6 @@ enum errorCodes {
   PERR_SEQ_MISMATCH = 5,
 };
 
-static unsigned char typeSizes[11] = {1, 2, 4, 8, 0, 1, 2, 4, 8, 0, 0};
-
 typedef volatile struct __attribute((packed)){
   unsigned int length;
   unsigned int id;

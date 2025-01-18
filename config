@@ -1,3 +1,4 @@
 TestPacket0
 TestPacket1 sample8 INT8 sample16 INT16 sample32 INT32
 TestPacket2 sampleu8 UINT8 sample16 INT16 sampleU32 UINT32 sample32 INT32
+TestPacket3 test1 UINT8 message STRING test2 UINT8

@@ -1,19 +1,21 @@
 #include "proto.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "config.h"
 #include "sanity.h"
+#include "parserTables.h"
 
-unsigned int definedPacketCount        = 0;
+unsigned char typeSizes[11] = {1, 2, 4, 8, 0, 1, 2, 4, 8, 0, 0};
+
+unsigned int definedPacketCount = 0;
 static unsigned int* packetStaticSizes = 0;
 
 static union {
   PacketHeader header;
   byte data[sizeof(PacketHeader)];
-} parsedHeaderData          = {};
+} parsedHeaderData = {};
 PacketHeader lastHeaderData = {};
 
 const byte* parsedPacketData;
@@ -22,12 +24,12 @@ const byte* lastPacketData;
 
 int lastErrorCode = 0;
 
-unsigned int totalPacketsSent     = 0;
+unsigned int totalPacketsSent = 0;
 unsigned int totalPacketsReceived = 0;
 
 int currentlyParsedPacketLength = 0;
-int currentlyParsedPacketId     = 0;
-int currentPacketSize           = 0;
+int currentlyParsedPacketId = 0;
+int currentPacketSize = 0;
 
 void reportError(int code)
 {
@@ -53,7 +55,7 @@ void loadPacketTable()
   }
 
   for(int i = 0; i < definedPacketCount; i++) {
-    const byte* ptr      = (const byte*)parserTable[i];
+    const byte* ptr = (const byte*)parserTable[i];
     packetStaticSizes[i] = PACKET_HEADER_LENGTH;
     while(*ptr != 0xFF) {
       int fieldType = *ptr;
@@ -112,10 +114,10 @@ void finishRecieiving()
 }
 
 enum {
-  PSTATUS_DETECT     = 0,
-  PSTATUS_HEADER     = 1,
+  PSTATUS_DETECT = 0,
+  PSTATUS_HEADER = 1,
   PSTATUS_STATICDATA = 2,
-} parsingStatus           = PSTATUS_DETECT;
+} parsingStatus = PSTATUS_DETECT;
 unsigned short last2Bytes = 0x0;
 void processByte(byte data)
 {
@@ -132,7 +134,7 @@ void processByte(byte data)
 
       if(currentPacketSize >= sizeof(PacketHeader)) {
         currentlyParsedPacketLength = parsedHeaderData.header.length;
-        currentlyParsedPacketId     = parsedHeaderData.header.id;
+        currentlyParsedPacketId = parsedHeaderData.header.id;
         if(currentlyParsedPacketId >= definedPacketCount) {
           reportError(PERR_UNKNOWN_ID);
           return;
@@ -160,21 +162,21 @@ byte* generatePacket(unsigned int id, void* data, unsigned int* size)
     reportError(PERR_UNKNOWN_ID);
     return 0;
   }
-  unsigned int staticLength  = packetStaticSizes[id] - PACKET_HEADER_LENGTH;
+  unsigned int staticLength = packetStaticSizes[id] - PACKET_HEADER_LENGTH;
   unsigned int dynamicLength = 0;
   unsigned int totalSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
 
   const PacketHeader header = {
-      .length    = staticLength + dynamicLength,
-      .id        = id,
+      .length = staticLength + dynamicLength,
+      .id = id,
       .seqNumber = totalPacketsSent,
       .ackNumber = totalPacketsReceived,
-      .checksum  = 0xCCCC,
+      .checksum = 0xCCCC,
   };
 
   byte* packetData = (byte*)malloc(totalSize * sizeof(byte));
-  packetData[0]    = MAGIC1;
-  packetData[1]    = MAGIC2;
+  packetData[0] = MAGIC1;
+  packetData[1] = MAGIC2;
   memcpy(packetData + 2, (void*)&header, PACKET_HEADER_LENGTH - 2);
   memcpy(packetData + PACKET_HEADER_LENGTH, data, staticLength);
 
@@ -201,10 +203,10 @@ const void* getLastPacket()
 
 void resetParsing()
 {
-  parsingStatus               = PSTATUS_DETECT;
-  currentlyParsedPacketId     = 0;
+  parsingStatus = PSTATUS_DETECT;
+  currentlyParsedPacketId = 0;
   currentlyParsedPacketLength = 0;
-  currentPacketSize           = 0;
+  currentPacketSize = 0;
   if(lastPacketData != parsedPacketData && parsedPacketData != 0) {
     free((void*)parsedPacketData);
   }
