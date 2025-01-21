@@ -50,11 +50,9 @@ typedef volatile struct __attribute((packed)){
 
 extern const byte* const parserTable[];
 
-void loadPacketTable();
-
 void processByte(byte data);
 
-byte* generatePacket(unsigned int id, void* data, unsigned int* size);
+byte* generatePacket(const unsigned int id, const void* data, unsigned int* size);
 
 const PacketHeader* getLastHeader();
 const void* getLastPacket();

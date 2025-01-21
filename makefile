@@ -17,7 +17,7 @@ TARGET_HEADER = $(BIN_DIR)/lib/$(TARGET_NAME).h
 PACKETS_HEADER = $(BIN_DIR)/lib/$(TARGET_NAME).h
 
 SRCS = $(wildcard $(SRC_DIR)/*.c)
-TESTS = $(wildcard $(TESTS_DIR)/*.c)
+TESTS = $(wildcard $(TESTS_DIR)*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)obj/%.o,$(SRCS))
 
 default: $(TARGET)
@@ -55,7 +55,8 @@ test: changecfg $(TARGET)
 	$(CUTEST_DIR)CuTest.h \
 	$(CUTEST_DIR)make-tests.sh \
 	$(BIN_DIR)test
-	$(shell cd $(BIN_DIR)/test ; ./make-tests.sh > AllTests.c)
+	
+	(cd $(BIN_DIR)test ; rm AllTests.c ; ./make-tests.sh > AllTests.c)
 
 	$(CC) $(TESTFLAGS) \
 	-o $(BIN_DIR)/test/test.o \

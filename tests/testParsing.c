@@ -9,7 +9,6 @@
 
 void TestStaticParsing(CuTest *tc)
 {
-  loadPacketTable();
   resetParsing();
   union {
     volatile struct {

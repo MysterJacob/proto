@@ -18,6 +18,12 @@ typedef const volatile struct __attribute__((packed)) {
 
 typedef const volatile struct __attribute__((packed)) {
 	UINT8 test1;
-	STRING message;
 	UINT8 test2;
+	STRING message;
 } TestPacket3;
+
+typedef const volatile struct __attribute__((packed)) {
+	UINT8 test1;
+	UINT8 test2;
+	VARUINT varuint;
+} TestPacket4;

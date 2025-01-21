@@ -7,9 +7,8 @@
 #include "packets.h"
 #include "proto.h"
 
-void TestStaticGenerating(CuTest *tc)
+void TestStaticGeneration(CuTest *tc)
 {
-  loadPacketTable();
   resetParsing();
   TestPacket2 testPacket = {0xDD, 0xFFFF, 0xCCCCCCCC, 0xAAAAAAAA};
 
@@ -37,7 +36,6 @@ void TestStaticGenerating(CuTest *tc)
 
 void TestAckSq(CuTest *tc)
 {
-  loadPacketTable();
   resetParsing();
 
   TestPacket0 tp = {};

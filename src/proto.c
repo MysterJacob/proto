@@ -4,13 +4,8 @@
 #include <string.h>
 
 #include "config.h"
-#include "sanity.h"
 #include "parserTables.h"
-
-unsigned char typeSizes[11] = {1, 2, 4, 8, 0, 1, 2, 4, 8, 0, 0};
-
-unsigned int definedPacketCount = 0;
-static unsigned int* packetStaticSizes = 0;
+#include "sanity.h"
 
 static union {
   PacketHeader header;
@@ -35,34 +30,6 @@ void reportError(int code)
 {
   resetParsing();
   lastErrorCode = code;
-}
-
-void loadPacketTable()
-{
-  definedPacketCount = 0;
-  while(parserTable[definedPacketCount]) {
-    definedPacketCount++;
-  }
-
-  if(packetStaticSizes) {
-    free(packetStaticSizes);
-  }
-
-  packetStaticSizes = malloc(definedPacketCount * sizeof(int));
-  if(packetStaticSizes == 0) {
-    reportError(PERR_MALLOC_FAILED);
-    return;
-  }
-
-  for(int i = 0; i < definedPacketCount; i++) {
-    const byte* ptr = (const byte*)parserTable[i];
-    packetStaticSizes[i] = PACKET_HEADER_LENGTH;
-    while(*ptr != 0xFF) {
-      int fieldType = *ptr;
-      packetStaticSizes[i] += typeSizes[fieldType];
-      ptr++;
-    }
-  }
 }
 
 void allocateMemoryForPacketData()
@@ -151,18 +118,20 @@ void processByte(byte data)
   // TODO
   // For now static, later on dynamic sizes will be included
   if(parsingStatus > PSTATUS_HEADER &&
-     currentPacketSize == packetStaticSizes[currentlyParsedPacketId] - 2) {
+     currentPacketSize - sizeof(PacketHeader) ==
+         packetStaticSizes[currentlyParsedPacketId]) {
     finishRecieiving();
   }
 }
 
-byte* generatePacket(unsigned int id, void* data, unsigned int* size)
+byte* generatePacket(const unsigned int id, const void* data,
+                     unsigned int* size)
 {
   if(id >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
     return 0;
   }
-  unsigned int staticLength = packetStaticSizes[id] - PACKET_HEADER_LENGTH;
+  unsigned int staticLength = packetStaticSizes[id];
   unsigned int dynamicLength = 0;
   unsigned int totalSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
 

@@ -7,7 +7,6 @@
 
 void TestDetectingSimpleHeader(CuTest *tc)
 {
-  loadPacketTable();
   resetParsing();
   union {
     PacketHeader ph;
@@ -40,7 +39,6 @@ void TestDetectingSimpleHeader(CuTest *tc)
 
 void TestDetectingMultipleHeaders(CuTest *tc)
 {
-  loadPacketTable();
   resetParsing();
   union {
     PacketHeader ph;
@@ -66,12 +64,4 @@ void TestDetectingMultipleHeaders(CuTest *tc)
     CuAssertIntEquals(tc, testHeader.ph.seqNumber, header->seqNumber);
     CuAssertIntEquals(tc, testHeader.ph.ackNumber, header->ackNumber);
   }
-}
-
-CuSuite *CuGetSuite(void)
-{
-  CuSuite *suite = CuSuiteNew();
-  SUITE_ADD_TEST(suite, TestDetectingSimpleHeader);
-  SUITE_ADD_TEST(suite, TestDetectingMultipleHeaders);
-  return suite;
 }
