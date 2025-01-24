@@ -1,3 +1,7 @@
+/*
+WARNING!!!
+This file is generated automatically during build process!
+*/
 #include "proto.h"
 
 typedef const volatile struct __attribute__((packed)) {

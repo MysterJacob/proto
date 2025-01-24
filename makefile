@@ -34,7 +34,7 @@ clean:
 	rm -rf $(BIN_DIR)
 
 $(INCLUDE_DIR)parserTables.h: FORCE
-	./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h
+	./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
 FORCE:
 $(TARGET): mkdir $(TARGET_HEADER) $(INCLUDE_DIR)parserTables.h 

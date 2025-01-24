@@ -4,8 +4,8 @@
 #include <string.h>
 
 #include "config.h"
-#include "parserTables.h"
 #include "sanity.h"
+#include "parserTables.h"
 
 static union {
   PacketHeader header;

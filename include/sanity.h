@@ -1,5 +1,3 @@
-#include "config.h"
-
 #ifdef DISABLE_ACK_SEQ_CHECK
 #warning Ack and Seq validation disabled!
 #endif
