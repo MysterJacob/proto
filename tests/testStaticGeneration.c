@@ -12,7 +12,7 @@ void TestStaticGeneration(CuTest *tc)
   resetParsing();
   TestPacket2 testPacket = {0xDD, 0xFFFF, 0xCCCCCCCC, 0xAAAAAAAA};
 
-  unsigned int size = 0;
+  size_t size = 0;
 
   byte *rawData = generatePacket(2, (void *)&testPacket, &size);
   for(int i = 0; i < size; i++) {
@@ -39,7 +39,7 @@ void TestAckSq(CuTest *tc)
   resetParsing();
 
   TestPacket0 tp = {};
-  unsigned int size;
+  size_t size;
 
   byte *rawData = generatePacket(0, (void *)&tp, &size);
   for(int h = 0; h < size; h++) {

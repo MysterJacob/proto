@@ -26,7 +26,7 @@ void TestStaticParsing(CuTest *tc)
   };
   processByte(MAGIC1);
   processByte(MAGIC2);
-  for(int i = 0; i < 25; i++) {
+  for(int i = 0; i < sizeof(PacketHeader) + sizeof(TestPacket1); i++) {
     processByte(data.data[i]);
   }
   const PacketHeader *ch = getLastHeader();

@@ -2,4 +2,8 @@ bin/
 cutest-1.5/
 compile_commands.json
 tests/CuTest.h
+config
+debug
+include/parserTables.h
+include/config.h
 .cache

@@ -7,12 +7,12 @@ DYNAMIC_TYPE_REGEX="(VARUINT|VARINT|STRING)"
 # Parser table entries
 awk -v regex="$DYNAMIC_TYPE_REGEX" \
 '
-{printf "const byte %s_pte[] = {", $2}
 /^DEF/{
+printf "const byte %s_pte[] = {", $2
 for(i=4;i<=NF;i+=2) if(!($i ~ regex)){ printf "TYPE_%s, ", $i; }
 for(i=4;i<=NF;i+=2) if(($i ~ regex)){ printf "TYPE_%s, ", $i; }
+print "0xFF};"
 }
-{print "0xFF};"}
 ' $1 >> $2
 
 # Parser table
@@ -22,6 +22,7 @@ BEGIN {printf "const byte *const parserTable[] = {"}
 /^DEF/{printf "%s_pte, ", $2}
 END {print "0};"}
 ' $1 >> $2
+
 #definedPacketCount
 awk \
 '
@@ -58,8 +59,16 @@ END { print "0x00};" }
 awk -v regex=$DYNAMIC_TYPE_REGEX \
 '
 BEGIN{c=0; printf "const unsigned int packetStaticCount[] = {"}
-/^DEF/{for(i=3;i<=NF;i+=2) if(!($i ~ regex)){c+=1}; printf "%s, ", c; c=0}
-END {printf "0x00};"}
+/^DEF/{for(i=4;i<=NF;i+=2) if(!($i ~ regex)){c+=1}; printf "%s, ", c; c=0}
+END {print "0x00};"}
+' $1 >> $2
+
+#packetDynamicCount
+awk -v regex=$DYNAMIC_TYPE_REGEX \
+'
+BEGIN{c=0; printf "const unsigned int packetDynamicCount[] = {"}
+/^DEF/{for(i=4;i<=NF;i+=2) if($i ~ regex){c+=1}; printf "%s, ", c; c=0}
+END {print "0x00};"}
 ' $1 >> $2
 
 # Structs

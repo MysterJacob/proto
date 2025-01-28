@@ -1,7 +1,7 @@
 SHELL := bash
 
 CFLAGS = -Wall -O2
-TESTFLAGS = -Wall -g3
+DEBUGFLAGS = -Wall -g3
 CC = gcc
 
 INCLUDE_DIR = include/
@@ -58,7 +58,7 @@ test: changecfg $(TARGET)
 	
 	(cd $(BIN_DIR)test ; rm AllTests.c ; ./make-tests.sh > AllTests.c)
 
-	$(CC) $(TESTFLAGS) \
+	$(CC) $(DEBUGFLAGS) \
 	-o $(BIN_DIR)/test/test.o \
 	-I$(CUTEST_DIR) \
 	-I$(INCLUDE_DIR) \
@@ -71,6 +71,10 @@ test: changecfg $(TARGET)
 	chmod +x $(BIN_DIR)/test/test.o
 	./$(BIN_DIR)/test/test.o
 
+debug: test
+	cp $(BIN_DIR)/test/test.o debug
+
 .PHONY:
 changecfg:
 	$(eval CONFIG := $(TESTS_DIR)config)
+	$(eval CFLAGS := $(DEBUGFLAGS))

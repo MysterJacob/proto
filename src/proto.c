@@ -1,11 +1,13 @@
 #include "proto.h"
 
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "config.h"
-#include "sanity.h"
 #include "parserTables.h"
+#include "sanity.h"
 
 static union {
   PacketHeader header;
@@ -22,9 +24,9 @@ int lastErrorCode = 0;
 unsigned int totalPacketsSent = 0;
 unsigned int totalPacketsReceived = 0;
 
-int currentlyParsedPacketLength = 0;
+size_t currentlyParsedPacketLength = 0;
+size_t currentPacketSize = 0;
 int currentlyParsedPacketId = 0;
-int currentPacketSize = 0;
 
 void reportError(int code)
 {
@@ -124,16 +126,56 @@ void processByte(byte data)
   }
 }
 
-byte* generatePacket(const unsigned int id, const void* data,
-                     unsigned int* size)
+size_t calculateVarintSize(long long data)
+{
+  size_t size = 0;
+  long long mask = 0x7F;
+  for(int i = 0; i <= sizeof(long long) * 8; i += 7) {
+    if((mask & data) > 0) {
+      size++;
+    }
+    mask <<= 7;
+  }
+  return size;
+}
+
+size_t calculateDynamicSize(const unsigned int id, const void* data)
+{
+  if(packetDynamicCount[id] == 0) {
+    return 0;
+  }
+
+  size_t totalSize = 0;
+  const void* dataPointer = data;
+  dataPointer += packetStaticSizes[id];
+
+  const byte* fieldType = parserTable[id];
+  fieldType += packetStaticCount[id];
+
+  for(int i = 0; i < packetDynamicCount[id]; i++) {
+    switch(*fieldType++) {
+      case TYPE_VARUINT:
+        totalSize += calculateVarintSize(*(long long*)dataPointer);
+        dataPointer += sizeof(unsigned long long);
+        break;
+      case TYPE_VARINT:
+        break;
+      case TYPE_STRING:
+        break;
+    }
+  }
+
+  return totalSize;
+}
+byte* generatePacket(const unsigned int id, const void* data, size_t* size)
 {
   if(id >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
     return 0;
   }
-  unsigned int staticLength = packetStaticSizes[id];
-  unsigned int dynamicLength = 0;
-  unsigned int totalSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
+  size_t staticLength = packetStaticSizes[id];
+  size_t dynamicLength = calculateDynamicSize(id, data);
+  size_t totalSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
 
   const PacketHeader header = {
       .length = staticLength + dynamicLength,
@@ -179,7 +221,7 @@ void resetParsing()
   if(lastPacketData != parsedPacketData && parsedPacketData != 0) {
     free((void*)parsedPacketData);
   }
-  parsedPacketData = 0;
+  *parsedPacketData = 0;
 }
 
 int getLastErrorCode()

@@ -10,13 +10,13 @@ void TestDetectingSimpleHeader(CuTest *tc)
   resetParsing();
   union {
     PacketHeader ph;
-    byte data[PACKET_HEADER_LENGTH];
+    byte data[sizeof(PacketHeader)];
   } testHeader = {
-      .ph = {.length    = 0x0,
-             .id        = 0x0,
+      .ph = {.length = 0x0,
+             .id = 0x0,
              .seqNumber = 0xC8,
              .ackNumber = 0xD1FFC1,
-             .checksum  = 0xEEFF}
+             .checksum = 0xEEFF}
   };
   for(int i = 0; i < 0xFF; i++) {
     processByte(0xFF);
@@ -25,7 +25,7 @@ void TestDetectingSimpleHeader(CuTest *tc)
   }
   processByte(0x57);
   processByte(0x5f);
-  for(int i = 0; i < PACKET_HEADER_LENGTH; i++) {
+  for(int i = 0; i < sizeof(PacketHeader); i++) {
     processByte(testHeader.data[i]);
   }
   const PacketHeader *header = getLastHeader();
@@ -42,20 +42,20 @@ void TestDetectingMultipleHeaders(CuTest *tc)
   resetParsing();
   union {
     PacketHeader ph;
-    byte data[PACKET_HEADER_LENGTH];
+    byte data[sizeof(PacketHeader)];
   } testHeader = {
-      .ph = {.length    = 0,
-             .id        = 0x0,
+      .ph = {.length = 0,
+             .id = 0x0,
              .seqNumber = 0,
              .ackNumber = 0,
-             .checksum  = 0xE}
+             .checksum = 0xE}
   };
   for(int i = 0; i < 0xFFFF; i++) {
     testHeader.ph.seqNumber = i;
     testHeader.ph.ackNumber = 0xFFFF - i;
     processByte(0x57);
     processByte(0x5f);
-    for(int i = 0; i < PACKET_HEADER_LENGTH - 2; i++) {
+    for(int i = 0; i < sizeof(PacketHeader); i++) {
       processByte(testHeader.data[i]);
     }
     const PacketHeader *header = getLastHeader();
