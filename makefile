@@ -55,6 +55,8 @@ test: changecfg $(TARGET)
 	$(CUTEST_DIR)CuTest.h \
 	$(CUTEST_DIR)make-tests.sh \
 	$(BIN_DIR)test
+
+	chmod +x $(BIN_DIR)test/make-tests.sh
 	
 	(cd $(BIN_DIR)test ; rm AllTests.c ; ./make-tests.sh > AllTests.c)
 

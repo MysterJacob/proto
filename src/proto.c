@@ -221,7 +221,7 @@ void resetParsing()
   if(lastPacketData != parsedPacketData && parsedPacketData != 0) {
     free((void*)parsedPacketData);
   }
-  *parsedPacketData = 0;
+  parsedPacketData = 0;
 }
 
 int getLastErrorCode()

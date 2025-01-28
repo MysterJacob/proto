@@ -5,5 +5,6 @@ tests/CuTest.h
 config
 debug
 include/parserTables.h
+include/packets.h
 include/config.h
 .cache
