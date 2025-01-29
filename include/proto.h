@@ -49,7 +49,7 @@ typedef volatile struct __attribute((packed)) {
   unsigned short checksum;
 } PacketHeader;
 
-extern const byte* const parserTable[];
+extern const enum datatype* const parserTable[];
 
 void processByte(byte data);
 

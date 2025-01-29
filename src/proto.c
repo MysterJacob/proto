@@ -149,11 +149,11 @@ size_t calculateDynamicSize(const unsigned int id, const void* data)
   const void* dataPointer = data;
   dataPointer += packetStaticSizes[id];
 
-  const byte* fieldType = parserTable[id];
-  fieldType += packetStaticCount[id];
+  const enum datatype* dynamicFieldType =
+      &parserTable[id][packetStaticCount[id]];
 
   for(int i = 0; i < packetDynamicCount[id]; i++) {
-    switch(*fieldType++) {
+    switch(*dynamicFieldType++) {
       case TYPE_VARUINT:
         totalSize += calculateVarintSize(*(long long*)dataPointer);
         dataPointer += sizeof(unsigned long long);
@@ -162,11 +162,26 @@ size_t calculateDynamicSize(const unsigned int id, const void* data)
         break;
       case TYPE_STRING:
         break;
+      default:
+        break;
     }
   }
 
   return totalSize;
 }
+
+size_t generateVaruint(long long varuint, byte* packetData)
+{
+  const char mask = 0b10000000;
+  size_t size = 0;
+  while(varuint > 0) {
+    packetData[size++] = mask | (varuint & 0x7F);
+    varuint >>= 7;
+  }
+  packetData[size - 1] ^= mask;
+  return size;
+}
+
 byte* generatePacket(const unsigned int id, const void* data, size_t* size)
 {
   if(id >= definedPacketCount) {
@@ -188,11 +203,33 @@ byte* generatePacket(const unsigned int id, const void* data, size_t* size)
   byte* packetData = (byte*)malloc(totalSize * sizeof(byte));
   packetData[0] = MAGIC1;
   packetData[1] = MAGIC2;
-  memcpy(packetData + 2, (void*)&header, PACKET_HEADER_LENGTH - 2);
+  memcpy(packetData + 2, (void*)&header, sizeof(PacketHeader));
   memcpy(packetData + PACKET_HEADER_LENGTH, data, staticLength);
 
-  // TODO
-  // Dynamic data
+  if(packetDynamicCount[id] != 0) {
+    const byte* dynamicData = data + staticLength;
+    byte* packetDataWriter = packetData + PACKET_HEADER_LENGTH + staticLength;
+
+    const enum datatype* dynamicFieldType =
+        &parserTable[id][packetStaticCount[id]];
+
+    for(int i = 0; i < packetDynamicCount[id]; i++) {
+      switch(*dynamicFieldType++) {
+        case TYPE_VARUINT:
+          const size_t varuintSize =
+              generateVaruint(*(long long*)dynamicData, packetDataWriter);
+          packetDataWriter += varuintSize;
+          dynamicData += sizeof(long long);
+          break;
+        case TYPE_VARINT:
+          break;
+        case TYPE_STRING:
+          break;
+        default:
+          break;
+      }
+    }
+  }
 
   *size = totalSize;
   totalPacketsSent++;
