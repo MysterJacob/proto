@@ -25,6 +25,23 @@ void TestDynamicVaruintGeneration(CuTest *tc)
   }
   CuAssertIntEquals(tc, 0, chk);
 }
+void TestDynamicVarintGeneration(CuTest *tc)
+{
+  resetParsing();
+  TestPacket5 tp = {.test1 = 0xEE, .varint = -35172, .test2 = 0xEE};
+  size_t size;
+  byte *data = generatePacket(5, (void *)&tp, &size);
+  byte reference[] = {0xEE, 0xEE, 0xe4, 0x12, 0x82};
+
+  CuAssertIntEquals(tc, 0, getLastErrorCode());
+
+  int chk = 0x0;
+  data += 20;
+  for(int i = 0; i < 5; i++) {
+    chk |= reference[i] ^ *(data++);
+  }
+  CuAssertIntEquals(tc, 0, chk);
+}
 void TestDynamicStrGeneration(CuTest *tc)
 {
   //   return;

@@ -154,12 +154,18 @@ size_t calculateDynamicSize(const unsigned int id, const void* data)
 
   for(int i = 0; i < packetDynamicCount[id]; i++) {
     switch(*dynamicFieldType++) {
-      case TYPE_VARUINT:
+      case TYPE_VARUINT: {
         totalSize += calculateVarintSize(*(long long*)dataPointer);
+        dataPointer += sizeof(long long);
+      } break;
+      case TYPE_VARINT: {
+        size_t size = calculateVarintSize(*(long long*)dataPointer);
+        if(size < 2) {
+          size = 2;
+        }
+        totalSize += size;
         dataPointer += sizeof(unsigned long long);
-        break;
-      case TYPE_VARINT:
-        break;
+      } break;
       case TYPE_STRING:
         break;
       default:
@@ -170,7 +176,7 @@ size_t calculateDynamicSize(const unsigned int id, const void* data)
   return totalSize;
 }
 
-size_t generateVaruint(long long varuint, byte* packetData)
+size_t generateVaruint(unsigned long long varuint, byte* packetData)
 {
   const char mask = 0b10000000;
   size_t size = 0;
@@ -179,6 +185,19 @@ size_t generateVaruint(long long varuint, byte* packetData)
     varuint >>= 7;
   }
   packetData[size - 1] ^= mask;
+  return size;
+}
+size_t generateVarint(long long varuint, byte* packetData)
+{
+  byte signbit = 0x0;
+  if(varuint < 0) {
+    signbit = 0x80;
+    varuint *= -1;
+  }
+  size_t size = generateVaruint(varuint, packetData);
+  packetData[size - 2] &= 0x7F;
+  packetData[size - 1] &= 0x7F;
+  packetData[size - 1] |= signbit;
   return size;
 }
 
@@ -215,14 +234,18 @@ byte* generatePacket(const unsigned int id, const void* data, size_t* size)
 
     for(int i = 0; i < packetDynamicCount[id]; i++) {
       switch(*dynamicFieldType++) {
-        case TYPE_VARUINT:
-          const size_t varuintSize =
-              generateVaruint(*(long long*)dynamicData, packetDataWriter);
+        case TYPE_VARUINT: {
+          const size_t varuintSize = generateVaruint(
+              *(unsigned long long*)dynamicData, packetDataWriter);
           packetDataWriter += varuintSize;
+          dynamicData += sizeof(unsigned long long);
+        } break;
+        case TYPE_VARINT: {
+          const size_t varintSize =
+              generateVarint(*(long long*)dynamicData, packetDataWriter);
+          packetDataWriter += varintSize;
           dynamicData += sizeof(long long);
-          break;
-        case TYPE_VARINT:
-          break;
+        } break;
         case TYPE_STRING:
           break;
         default:
