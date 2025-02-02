@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 #define byte unsigned char
-#define PACKET_HEADER_LENGTH sizeof(PacketHeader) + 2
+#define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + 2)
 #define MAGIC1 0x57
 #define MAGIC2 0x5f
 

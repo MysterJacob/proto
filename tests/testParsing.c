@@ -4,8 +4,8 @@
 #include <stdlib.h>
 
 #include "CuTest.h"
-#include "proto.h"
 #include "packets.h"
+#include "proto.h"
 
 void TestStaticParsing(CuTest *tc)
 {
@@ -17,11 +17,11 @@ void TestStaticParsing(CuTest *tc)
     } packet;
     const byte data[27];
   } data = {
-      .packet.header = {.length    = 7,
-                        .id        = 1,
+      .packet.header = {.length = 7,
+                        .id = 1,
                         .seqNumber = 0,
                         .ackNumber = 0,
-                        .checksum  = 0x0000},
+                        .checksum = 0x0000},
       .packet.packet = {1, 2, 3}
   };
   processByte(MAGIC1);
