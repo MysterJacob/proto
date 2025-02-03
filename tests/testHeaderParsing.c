@@ -1,13 +1,12 @@
 #include <assert.h>
 #include <stddef.h>
-#include <stdio.h>
 
 #include "CuTest.h"
 #include "proto.h"
 
 void TestDetectingSimpleHeader(CuTest *tc)
 {
-  resetParsing();
+  hardResetParser();
   union {
     PacketHeader ph;
     byte data[sizeof(PacketHeader)];
@@ -19,7 +18,7 @@ void TestDetectingSimpleHeader(CuTest *tc)
              .checksum = 0xEEFF}
   };
   for(int i = 0; i < 0xFF; i++) {
-    processByte(0xFF);
+    processByte(0x8C);
     const PacketHeader *ch = getLastHeader();
     CuAssertTrue(tc, ch == 0);
   }

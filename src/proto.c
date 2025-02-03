@@ -26,12 +26,14 @@ unsigned int totalPacketsReceived = 0;
 
 size_t currentlyParsedPacketLength = 0;
 size_t currentPacketSize = 0;
+size_t currentHeaderSize = 0;
 int currentlyParsedPacketId = 0;
 
-void reportError(int code)
+enum errorCode reportError(enum errorCode code)
 {
   resetParsing();
   lastErrorCode = code;
+  return code;
 }
 
 void allocateMemoryForPacketData()
@@ -49,19 +51,22 @@ void allocateMemoryForPacketData()
 
 void parseHeaderData(byte data)
 {
-  parsedHeaderData.data[currentPacketSize++] = data;
+  parsedHeaderData.data[currentHeaderSize++] = data;
 }
 
-void parsePacketData(byte data)
+enum errorCode parsePacketData(byte data)
 {
+  if(currentPacketSize >= currentlyParsedPacketLength) {
+    return reportError(PERR_BUFFER_OVERFLOW);
+  }
   *(packetWriterHead++) = data;
   currentPacketSize++;
+  return 0;
 }
 
 void finishRecieiving()
 {
-  if(currentPacketSize - sizeof(PacketHeader) !=
-     parsedHeaderData.header.length) {
+  if(currentPacketSize != parsedHeaderData.header.length) {
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
@@ -86,8 +91,40 @@ enum {
   PSTATUS_DETECT = 0,
   PSTATUS_HEADER = 1,
   PSTATUS_STATICDATA = 2,
+  PSTATUS_DYNAMICDATA = 3,
 } parsingStatus = PSTATUS_DETECT;
+
 unsigned short last2Bytes = 0x0;
+void finishHeaderParsing()
+{
+  currentlyParsedPacketLength = parsedHeaderData.header.length;
+  currentlyParsedPacketId = parsedHeaderData.header.id;
+
+  if(currentlyParsedPacketId >= definedPacketCount) {
+    reportError(PERR_UNKNOWN_ID);
+    return;
+  }
+
+  if(currentlyParsedPacketLength == 0) {
+    finishRecieiving();
+  } else {
+    allocateMemoryForPacketData();
+    if(packetStaticSizes[currentlyParsedPacketId] == 0) {
+      parsingStatus = PSTATUS_DYNAMICDATA;
+    } else {
+      parsingStatus = PSTATUS_STATICDATA;
+    }
+  }
+}
+
+void finishStaticDataParsing()
+{
+  if(packetDynamicCount[currentlyParsedPacketId] == 0) {
+    finishRecieiving();
+  } else {
+    parsingStatus = PSTATUS_DYNAMICDATA;
+  }
+}
 
 void processByte(const byte data)
 {
@@ -102,28 +139,22 @@ void processByte(const byte data)
     case PSTATUS_HEADER:
       parseHeaderData(data);
 
-      if(currentPacketSize >= sizeof(PacketHeader)) {
-        currentlyParsedPacketLength = parsedHeaderData.header.length;
-        currentlyParsedPacketId = parsedHeaderData.header.id;
-        if(currentlyParsedPacketId >= definedPacketCount) {
-          reportError(PERR_UNKNOWN_ID);
-          return;
-        }
-        allocateMemoryForPacketData();
-
-        parsingStatus = PSTATUS_STATICDATA;
+      if(currentHeaderSize == sizeof(PacketHeader)) {
+        finishHeaderParsing();
       }
       break;
     case PSTATUS_STATICDATA:
-      parsePacketData(data);
+      if(parsePacketData(data) != 0) {
+        return;
+      }
+
+      if(currentPacketSize == packetStaticSizes[currentlyParsedPacketId]) {
+        finishStaticDataParsing();
+      }
       break;
-  }
-  // TODO
-  // For now static, later on dynamic sizes will be included
-  if(parsingStatus > PSTATUS_HEADER &&
-     currentPacketSize - sizeof(PacketHeader) ==
-         packetStaticSizes[currentlyParsedPacketId]) {
-    finishRecieiving();
+    case PSTATUS_DYNAMICDATA:
+      finishRecieiving();
+      break;
   }
 }
 
@@ -131,12 +162,11 @@ size_t calculateVaruintSize(const unsigned long long data)
 {
   size_t size = 0;
   long long mask = 0x7F;
-  for(int i = 0; i <= sizeof(long long) * 8; i += 7) {
-    if((mask & data) > 0) {
-      size++;
-    }
+  int i = 0;
+  do {
+    size++;
     mask <<= 7;
-  }
+  } while((mask & data) > 0 && i <= sizeof(long long) * 8);
   return size;
 }
 
@@ -157,6 +187,7 @@ size_t calculateDynamicSize(const unsigned int id, const void* data)
     switch(*dynamicFieldType++) {
       case TYPE_VARUINT: {
         totalSize += calculateVaruintSize(*(unsigned long long*)dataPointer);
+
         dataPointer += sizeof(long long);
       } break;
       case TYPE_VARINT: {
@@ -307,11 +338,23 @@ const void* getLastPacket()
   return lastPacketData;
 }
 
+void hardResetParser()
+{
+  lastErrorCode = 0;
+  totalPacketsSent = 0;
+  totalPacketsReceived = 0;
+  currentlyParsedPacketLength = 0;
+  currentPacketSize = 0;
+  currentlyParsedPacketId = 0;
+  resetParsing();
+}
+
 void resetParsing()
 {
   parsingStatus = PSTATUS_DETECT;
   currentlyParsedPacketId = 0;
   currentlyParsedPacketLength = 0;
+  currentHeaderSize = 0;
   currentPacketSize = 0;
   if(lastPacketData != parsedPacketData && parsedPacketData != 0) {
     free((void*)parsedPacketData);

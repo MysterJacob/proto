@@ -33,12 +33,13 @@ enum datatype {
 #define VARUINT unsigned long int
 #define STRING char*
 
-enum errorCodes {
+enum errorCode {
   PERR_MALLOC_FAILED = 1,
-  PERR_UNKNOWN_ID = 2,
-  PERR_LENGTH_MISMATCH = 3,
-  PERR_ACK_MISMATCH = 4,
-  PERR_SEQ_MISMATCH = 5,
+  PERR_BUFFER_OVERFLOW = 2,
+  PERR_UNKNOWN_ID = 3,
+  PERR_LENGTH_MISMATCH = 4,
+  PERR_ACK_MISMATCH = 5,
+  PERR_SEQ_MISMATCH = 6,
 };
 
 typedef volatile struct __attribute((packed)) {
@@ -59,5 +60,6 @@ const PacketHeader* getLastHeader();
 const void* getLastPacket();
 
 void resetParsing();
+void hardResetParser();
 int getLastErrorCode();
 #endif
