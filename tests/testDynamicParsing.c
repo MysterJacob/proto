@@ -8,9 +8,8 @@
 
 void TestDynamicVaruintParsing(CuTest *tc)
 {
-  return;
   resetParsing();
-  for(int i = 0; i < 1; i++) {
+  for(int i = 0; i < 255; i++) {
     TestPacket4 tp = {.test1 = 0xFF - i, .varuint = 65530 * i, .test2 = i};
 
     size_t size;

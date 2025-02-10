@@ -1,7 +1,6 @@
 #include "proto.h"
 
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,9 +14,9 @@ static union {
 } parsedHeaderData = {};
 PacketHeader lastHeaderData = {};
 
-const byte* parsedPacketData;
-byte* packetWriterHead;
-const byte* lastPacketData;
+const byte *parsedPacketData;
+byte *packetWriterHead;
+const byte *lastPacketData;
 
 int lastErrorCode = 0;
 
@@ -46,7 +45,7 @@ void allocateMemoryForPacketData()
     reportError(PERR_MALLOC_FAILED);
     return;
   }
-  packetWriterHead = (byte*)parsedPacketData;
+  packetWriterHead = (byte *)parsedPacketData;
 }
 
 void parseHeaderData(byte data)
@@ -93,8 +92,6 @@ enum {
   PSTATUS_STATICDATA = 2,
   PSTATUS_DYNAMICDATA = 3,
 } parsingStatus = PSTATUS_DETECT;
-
-unsigned short last2Bytes = 0x0;
 void finishHeaderParsing()
 {
   currentlyParsedPacketLength = parsedHeaderData.header.length;
@@ -126,6 +123,11 @@ void finishStaticDataParsing()
   }
 }
 
+void processDynamicData(const byte data)
+{
+}
+
+unsigned short last2Bytes = 0x0;
 void processByte(const byte data)
 {
   switch(parsingStatus) {
@@ -169,41 +171,44 @@ size_t calculateVaruintSize(const unsigned long long data)
   } while((mask & data) > 0 && i <= sizeof(long long) * 8);
   return size;
 }
+size_t calculateVarintSize(const long long data)
+{
+  long long value = data;
+  if(value < 0) {
+    value *= -1;
+  }
+  size_t size = calculateVaruintSize(value);
+  if(size < 2) {
+    size = 2;
+  }
+  return size;
+}
 
-size_t calculateDynamicSize(const unsigned int id, const void* data)
+size_t calculateDynamicSize(const unsigned int id, const void *data)
 {
   if(packetDynamicCount[id] == 0) {
     return 0;
   }
 
   size_t totalSize = 0;
-  const void* dataPointer = data;
+  const void *dataPointer = data;
   dataPointer += packetStaticSizes[id];
 
-  const enum datatype* dynamicFieldType =
+  const enum datatype *dynamicFieldType =
       &parserTable[id][packetStaticCount[id]];
 
   for(int i = 0; i < packetDynamicCount[id]; i++) {
     switch(*dynamicFieldType++) {
       case TYPE_VARUINT: {
-        totalSize += calculateVaruintSize(*(unsigned long long*)dataPointer);
-
+        totalSize += calculateVaruintSize(*(unsigned long long *)dataPointer);
         dataPointer += sizeof(long long);
       } break;
       case TYPE_VARINT: {
-        long long value = *(long long*)dataPointer;
-        if(value < 0) {
-          value *= -1;
-        }
-        size_t size = calculateVaruintSize(value);
-        if(size < 2) {
-          size = 2;
-        }
-        totalSize += size;
+        totalSize += calculateVarintSize(*(long long *)dataPointer);
         dataPointer += sizeof(unsigned long long);
       } break;
       case TYPE_STRING: {
-        size_t length = strlen(*(char**)dataPointer);
+        size_t length = strlen(*(char **)dataPointer);
         size_t size = length + calculateVaruintSize(length);
         totalSize += size;
         dataPointer += 1 + length + sizeof(unsigned long long);
@@ -216,7 +221,7 @@ size_t calculateDynamicSize(const unsigned int id, const void* data)
   return totalSize;
 }
 
-size_t generateVaruint(unsigned long long varuint, byte* packetData)
+size_t generateVaruint(unsigned long long varuint, byte *packetData)
 {
   const char mask = 0b10000000;
   size_t size = 0;
@@ -228,7 +233,7 @@ size_t generateVaruint(unsigned long long varuint, byte* packetData)
   return size;
 }
 
-size_t generateVarint(long long varuint, byte* packetData)
+size_t generateVarint(long long varuint, byte *packetData)
 {
   byte signbit = 0x0;
   if(varuint < 0) {
@@ -246,7 +251,7 @@ size_t generateVarint(long long varuint, byte* packetData)
   return size;
 }
 
-size_t generateString(const char* str, byte* packetData, size_t* strLen)
+size_t generateString(const char *str, byte *packetData, size_t *strLen)
 {
   size_t len = strlen(str);
   *strLen = len;
@@ -256,7 +261,7 @@ size_t generateString(const char* str, byte* packetData, size_t* strLen)
   return len + varuintSize;
 }
 
-byte* generatePacket(const unsigned int id, const void* data, size_t* size)
+byte *generatePacket(const unsigned int id, const void *data, size_t *size)
 {
   if(id >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
@@ -267,37 +272,37 @@ byte* generatePacket(const unsigned int id, const void* data, size_t* size)
   size_t dynamicLength = calculateDynamicSize(id, data);
   size_t totalSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
 
-  byte* packetData = (byte*)malloc(totalSize * sizeof(byte));
+  byte *packetData = (byte *)malloc(totalSize * sizeof(byte));
 
   packetData[0] = MAGIC1;
   packetData[1] = MAGIC2;
   memcpy(packetData + PACKET_HEADER_LENGTH, data, staticLength);
 
   if(packetDynamicCount[id] != 0) {
-    const byte* dynamicData = data + staticLength;
-    byte* dynamicDataWriter = packetData + PACKET_HEADER_LENGTH + staticLength;
+    const byte *dynamicData = data + staticLength;
+    byte *dynamicDataWriter = packetData + PACKET_HEADER_LENGTH + staticLength;
 
-    const enum datatype* dynamicFieldType =
+    const enum datatype *dynamicFieldType =
         &parserTable[id][packetStaticCount[id]];
 
     for(int i = 0; i < packetDynamicCount[id]; i++) {
       switch(*dynamicFieldType++) {
         case TYPE_VARUINT: {
           const size_t varuintSize = generateVaruint(
-              *(unsigned long long*)dynamicData, dynamicDataWriter);
+              *(unsigned long long *)dynamicData, dynamicDataWriter);
           dynamicDataWriter += varuintSize;
           dynamicData += sizeof(unsigned long long);
         } break;
         case TYPE_VARINT: {
           const size_t varintSize =
-              generateVarint(*(long long*)dynamicData, dynamicDataWriter);
+              generateVarint(*(long long *)dynamicData, dynamicDataWriter);
           dynamicDataWriter += varintSize;
           dynamicData += sizeof(long long);
         } break;
         case TYPE_STRING: {
           size_t strLen;
           const size_t stringSize =
-              generateString(*(char**)dynamicData, dynamicDataWriter, &strLen);
+              generateString(*(char **)dynamicData, dynamicDataWriter, &strLen);
           dynamicDataWriter += stringSize;
           dynamicData += strLen;
         } break;
@@ -318,14 +323,14 @@ byte* generatePacket(const unsigned int id, const void* data, size_t* size)
   // TODO
   // crc
 #endif
-  memcpy(packetData + 2, (void*)&header, sizeof(PacketHeader));
+  memcpy(packetData + 2, (void *)&header, sizeof(PacketHeader));
 
   *size = totalSize;
   totalPacketsSent++;
   return packetData;
 }
 
-const PacketHeader* getLastHeader()
+const PacketHeader *getLastHeader()
 {
   if(totalPacketsReceived == 0) {
     return 0;
@@ -333,7 +338,7 @@ const PacketHeader* getLastHeader()
   return &lastHeaderData;
 }
 
-const void* getLastPacket()
+const void *getLastPacket()
 {
   return lastPacketData;
 }
@@ -357,7 +362,7 @@ void resetParsing()
   currentHeaderSize = 0;
   currentPacketSize = 0;
   if(lastPacketData != parsedPacketData && parsedPacketData != 0) {
-    free((void*)parsedPacketData);
+    free((void *)parsedPacketData);
   }
   parsedPacketData = 0;
 }
