@@ -9,7 +9,7 @@
 void TestDynamicVaruintParsing(CuTest *tc)
 {
   resetParsing();
-  for(int i = 0; i < 255; i++) {
+  for(int i = 0; i < 0xFF; i++) {
     TestPacket4 tp = {.test1 = 0xFF - i, .varuint = 65530 * i, .test2 = i};
 
     size_t size;
@@ -21,9 +21,10 @@ void TestDynamicVaruintParsing(CuTest *tc)
     }
 
     CuAssertIntEquals(tc, 0, getLastErrorCode());
-    TestPacket4 recv = *(TestPacket4 *)getLastPacket();
-    CuAssertIntEquals(tc, 0xFF - i, recv.test1);
-    CuAssertIntEquals(tc, 65530 * i, recv.varuint);
+    TestPacket4 *recv = (TestPacket4 *)getLastPacket();
+    CuAssertTrue(tc, recv != 0);
+    CuAssertIntEquals(tc, 0xFF - i, recv->test1);
+    CuAssertIntEquals(tc, 65530 * i, recv->varuint);
   }
 }
 // void TestDynamicVarintGeneration(CuTest *tc)

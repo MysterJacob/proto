@@ -1,6 +1,7 @@
 #include "proto.h"
 
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,6 +24,7 @@ int lastErrorCode = 0;
 unsigned int totalPacketsSent = 0;
 unsigned int totalPacketsReceived = 0;
 
+const enum datatype *currentDynamicField = 0;
 size_t currentlyParsedPacketLength = 0;
 size_t currentPacketSize = 0;
 size_t currentHeaderSize = 0;
@@ -106,6 +108,12 @@ void finishHeaderParsing()
     finishRecieiving();
   } else {
     allocateMemoryForPacketData();
+
+    if(packetDynamicCount[currentlyParsedPacketId] != 0) {
+      currentDynamicField =
+          &parserTable[currentlyParsedPacketId]
+                      [packetStaticSizes[currentlyParsedPacketId]];
+    }
     if(packetStaticSizes[currentlyParsedPacketId] == 0) {
       parsingStatus = PSTATUS_DYNAMICDATA;
     } else {
@@ -123,8 +131,44 @@ void finishStaticDataParsing()
   }
 }
 
+int parseVaruint(const byte data)
+{
+  static int counter = 0;
+  static int buffer = 0;
+  const int value = data & 0x7F;
+  const int marker = data & 0x80;
+
+  buffer |= value << counter;
+  counter += 7;
+
+  if(marker == 0) {
+    while(counter > 0) {
+      parsePacketData(buffer & 0xFF);
+      buffer >>= 8;
+      counter -= 8;
+    }
+    counter = 0;
+    buffer = 0;
+  }else if(counter >= 8){
+    parsePacketData(buffer & 0xFF);
+    buffer >>= 8;
+    counter -= 8;
+  }
+
+  return marker;
+}
+
 void processDynamicData(const byte data)
 {
+  switch(*currentDynamicField) {
+    case TYPE_VARUINT:
+      if(parseVaruint(data) == 0x0) {
+        currentDynamicField++;
+      }
+      break;
+    default:
+      break;
+  }
 }
 
 unsigned short last2Bytes = 0x0;
@@ -155,7 +199,10 @@ void processByte(const byte data)
       }
       break;
     case PSTATUS_DYNAMICDATA:
-      finishRecieiving();
+      processDynamicData(data);
+      if(*currentDynamicField == 0x0) {
+        finishRecieiving();
+      }
       break;
   }
 }
@@ -225,10 +272,10 @@ size_t generateVaruint(unsigned long long varuint, byte *packetData)
 {
   const char mask = 0b10000000;
   size_t size = 0;
-  while(varuint > 0) {
+  do {
     packetData[size++] = mask | (varuint & 0x7F);
     varuint >>= 7;
-  }
+  } while(varuint > 0);
   packetData[size - 1] ^= mask;
   return size;
 }
@@ -361,6 +408,7 @@ void resetParsing()
   currentlyParsedPacketLength = 0;
   currentHeaderSize = 0;
   currentPacketSize = 0;
+  currentDynamicField = 0;
   if(lastPacketData != parsedPacketData && parsedPacketData != 0) {
     free((void *)parsedPacketData);
   }

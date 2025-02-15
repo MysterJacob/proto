@@ -11,7 +11,7 @@ awk -v regex="$DYNAMIC_TYPE_REGEX" \
 printf "const enum datatype %s_pte[] = {", $2
 for(i=4;i<=NF;i+=2) if(!($i ~ regex)){ printf "TYPE_%s, ", $i; }
 for(i=4;i<=NF;i+=2) if(($i ~ regex)){ printf "TYPE_%s, ", $i; }
-print "0xFF};"
+print "0x00};"
 }
 ' $1 >> $2
 
