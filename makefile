@@ -49,7 +49,7 @@ $(TARGET_HEADER):
 	cp $(INCLUDE_DIR)packets.h $(PACKETS_HEADER)
 
 .PHONY:
-test: changecfg $(TARGET)
+mktest: changecfg $(TARGET)
 	cp \
 	$(TESTS) \
 	$(CUTEST_DIR)CuTest.h \
@@ -71,9 +71,12 @@ test: changecfg $(TARGET)
 	$(OBJS)
 
 	chmod +x $(BIN_DIR)/test/test.o
+
+.PHONY:
+test: mktest
 	./$(BIN_DIR)/test/test.o
 
-debug: test
+debug: mktest
 	cp $(BIN_DIR)/test/test.o debug
 
 .PHONY:
