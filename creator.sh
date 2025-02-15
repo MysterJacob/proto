@@ -8,7 +8,7 @@ DYNAMIC_TYPE_REGEX="(VARUINT|VARINT|STRING)"
 awk -v regex="$DYNAMIC_TYPE_REGEX" \
 '
 /^DEF/{
-printf "const enum datatype %s_pte[] = {", $2
+printf "const datatype %s_pte[] = {", $2
 for(i=4;i<=NF;i+=2) if(!($i ~ regex)){ printf "TYPE_%s, ", $i; }
 for(i=4;i<=NF;i+=2) if(($i ~ regex)){ printf "TYPE_%s, ", $i; }
 print "0x00};"
@@ -18,7 +18,7 @@ print "0x00};"
 # Parser table
 awk \
 '
-BEGIN {printf "const enum datatype *const parserTable[] = {"}
+BEGIN {printf "const datatype *const parserTable[] = {"}
 /^DEF/{printf "%s_pte, ", $2}
 END {print "0};"}
 ' $1 >> $2

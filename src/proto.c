@@ -12,62 +12,62 @@
 static union {
   PacketHeader header;
   byte data[sizeof(PacketHeader)];
-} parsedHeaderData = {};
-PacketHeader lastHeaderData = {};
+} prsHdrData = {};
+PacketHeader lstHdrData = {};
 
-const byte *parsedPacketData;
-byte *packetWriterHead;
-const byte *lastPacketData;
+const byte *prsPktData;
+byte *pktWriter;
+const byte *lstPktData;
 
-int lastErrorCode = 0;
+int lstErrCode = 0;
 
 unsigned int totalPacketsSent = 0;
 unsigned int totalPacketsReceived = 0;
 
-const enum datatype *currentDynamicField = 0;
-size_t currentlyParsedPacketLength = 0;
-size_t currentPacketSize = 0;
-size_t currentHeaderSize = 0;
-int currentlyParsedPacketId = 0;
+const datatype *prsDynField = 0;
+size_t prsPktLength = 0;
+size_t prsPktSize = 0;
+size_t prsHdrSize = 0;
+unsigned int prsPktId = 0;
 
-enum errorCode reportError(enum errorCode code)
+const errorCode reportError(const errorCode code)
 {
   resetParsing();
-  lastErrorCode = code;
+  lstErrCode = code;
   return code;
 }
 
 void allocateMemoryForPacketData()
 {
-  if(currentlyParsedPacketLength == 0) {
+  if(prsPktLength == 0) {
     return;
   }
-  parsedPacketData = malloc(currentlyParsedPacketLength);
-  if(parsedPacketData == 0) {
+  prsPktData = malloc(prsPktLength);
+  if(prsPktData == 0) {
     reportError(PERR_MALLOC_FAILED);
     return;
   }
-  packetWriterHead = (byte *)parsedPacketData;
+  pktWriter = (byte *)prsPktData;
 }
 
-void parseHeaderData(byte data)
+void parseHeaderData(const byte data)
 {
-  parsedHeaderData.data[currentHeaderSize++] = data;
+  prsHdrData.data[prsHdrSize++] = data;
 }
 
-enum errorCode parsePacketData(byte data)
+const errorCode parsePacketData(const byte data)
 {
-  if(currentPacketSize >= currentlyParsedPacketLength) {
+  if(prsPktSize >= prsPktLength) {
     return reportError(PERR_BUFFER_OVERFLOW);
   }
-  *(packetWriterHead++) = data;
-  currentPacketSize++;
+  *(pktWriter++) = data;
+  prsPktSize++;
   return 0;
 }
 
 void finishRecieiving()
 {
-  if(currentPacketSize != parsedHeaderData.header.length) {
+  if(prsPktSize != prsHdrData.header.length) {
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
@@ -83,8 +83,8 @@ void finishRecieiving()
 #endif
 
   totalPacketsReceived++;
-  lastHeaderData = parsedHeaderData.header;
-  lastPacketData = parsedPacketData;
+  lstHdrData = prsHdrData.header;
+  lstPktData = prsPktData;
   resetParsing();
 }
 
@@ -96,25 +96,23 @@ enum {
 } parsingStatus = PSTATUS_DETECT;
 void finishHeaderParsing()
 {
-  currentlyParsedPacketLength = parsedHeaderData.header.length;
-  currentlyParsedPacketId = parsedHeaderData.header.id;
+  prsPktLength = prsHdrData.header.length;
+  prsPktId = prsHdrData.header.id;
 
-  if(currentlyParsedPacketId >= definedPacketCount) {
+  if(prsPktId >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
     return;
   }
 
-  if(currentlyParsedPacketLength == 0) {
+  if(prsPktLength == 0) {
     finishRecieiving();
   } else {
     allocateMemoryForPacketData();
 
-    if(packetDynamicCount[currentlyParsedPacketId] != 0) {
-      currentDynamicField =
-          &parserTable[currentlyParsedPacketId]
-                      [packetStaticSizes[currentlyParsedPacketId]];
+    if(packetDynamicCount[prsPktId] != 0) {
+      prsDynField = &parserTable[prsPktId][packetStaticSizes[prsPktId]];
     }
-    if(packetStaticSizes[currentlyParsedPacketId] == 0) {
+    if(packetStaticSizes[prsPktId] == 0) {
       parsingStatus = PSTATUS_DYNAMICDATA;
     } else {
       parsingStatus = PSTATUS_STATICDATA;
@@ -124,14 +122,14 @@ void finishHeaderParsing()
 
 void finishStaticDataParsing()
 {
-  if(packetDynamicCount[currentlyParsedPacketId] == 0) {
+  if(packetDynamicCount[prsPktId] == 0) {
     finishRecieiving();
   } else {
     parsingStatus = PSTATUS_DYNAMICDATA;
   }
 }
 
-int parseVaruint(const byte data)
+const int parseVaruint(const byte data)
 {
   static int counter = 0;
   static int buffer = 0;
@@ -149,7 +147,7 @@ int parseVaruint(const byte data)
     }
     counter = 0;
     buffer = 0;
-  }else if(counter >= 8){
+  } else if(counter >= 8) {
     parsePacketData(buffer & 0xFF);
     buffer >>= 8;
     counter -= 8;
@@ -160,10 +158,10 @@ int parseVaruint(const byte data)
 
 void processDynamicData(const byte data)
 {
-  switch(*currentDynamicField) {
+  switch(*prsDynField) {
     case TYPE_VARUINT:
       if(parseVaruint(data) == 0x0) {
-        currentDynamicField++;
+        prsDynField++;
       }
       break;
     default:
@@ -185,7 +183,7 @@ void processByte(const byte data)
     case PSTATUS_HEADER:
       parseHeaderData(data);
 
-      if(currentHeaderSize == sizeof(PacketHeader)) {
+      if(prsHdrSize == sizeof(PacketHeader)) {
         finishHeaderParsing();
       }
       break;
@@ -194,20 +192,20 @@ void processByte(const byte data)
         return;
       }
 
-      if(currentPacketSize == packetStaticSizes[currentlyParsedPacketId]) {
+      if(prsPktSize == packetStaticSizes[prsPktId]) {
         finishStaticDataParsing();
       }
       break;
     case PSTATUS_DYNAMICDATA:
       processDynamicData(data);
-      if(*currentDynamicField == 0x0) {
+      if(*prsDynField == 0x0) {
         finishRecieiving();
       }
       break;
   }
 }
 
-size_t calculateVaruintSize(const unsigned long long data)
+const size_t calculateVaruintSize(const unsigned long long data)
 {
   size_t size = 0;
   long long mask = 0x7F;
@@ -218,7 +216,8 @@ size_t calculateVaruintSize(const unsigned long long data)
   } while((mask & data) > 0 && i <= sizeof(long long) * 8);
   return size;
 }
-size_t calculateVarintSize(const long long data)
+
+const size_t calculateVarintSize(const long long data)
 {
   long long value = data;
   if(value < 0) {
@@ -231,7 +230,7 @@ size_t calculateVarintSize(const long long data)
   return size;
 }
 
-size_t calculateDynamicSize(const unsigned int id, const void *data)
+const size_t calculateDynamicSize(const unsigned int id, const void *data)
 {
   if(packetDynamicCount[id] == 0) {
     return 0;
@@ -241,7 +240,7 @@ size_t calculateDynamicSize(const unsigned int id, const void *data)
   const void *dataPointer = data;
   dataPointer += packetStaticSizes[id];
 
-  const enum datatype *dynamicFieldType =
+  const datatype *dynamicFieldType =
       &parserTable[id][packetStaticCount[id]];
 
   for(int i = 0; i < packetDynamicCount[id]; i++) {
@@ -250,16 +249,19 @@ size_t calculateDynamicSize(const unsigned int id, const void *data)
         totalSize += calculateVaruintSize(*(unsigned long long *)dataPointer);
         dataPointer += sizeof(long long);
       } break;
+
       case TYPE_VARINT: {
         totalSize += calculateVarintSize(*(long long *)dataPointer);
         dataPointer += sizeof(unsigned long long);
       } break;
+
       case TYPE_STRING: {
         size_t length = strlen(*(char **)dataPointer);
         size_t size = length + calculateVaruintSize(length);
         totalSize += size;
         dataPointer += 1 + length + sizeof(unsigned long long);
       } break;
+
       default:
         break;
     }
@@ -268,7 +270,7 @@ size_t calculateDynamicSize(const unsigned int id, const void *data)
   return totalSize;
 }
 
-size_t generateVaruint(unsigned long long varuint, byte *packetData)
+const size_t generateVaruint(unsigned long long varuint, byte *packetData)
 {
   const char mask = 0b10000000;
   size_t size = 0;
@@ -280,7 +282,7 @@ size_t generateVaruint(unsigned long long varuint, byte *packetData)
   return size;
 }
 
-size_t generateVarint(long long varuint, byte *packetData)
+const size_t generateVarint(long long varuint, byte *packetData)
 {
   byte signbit = 0x0;
   if(varuint < 0) {
@@ -298,7 +300,7 @@ size_t generateVarint(long long varuint, byte *packetData)
   return size;
 }
 
-size_t generateString(const char *str, byte *packetData, size_t *strLen)
+const size_t generateString(const char *str, byte *packetData, size_t *strLen)
 {
   size_t len = strlen(str);
   *strLen = len;
@@ -306,6 +308,42 @@ size_t generateString(const char *str, byte *packetData, size_t *strLen)
   packetData += varuintSize;
   memcpy(packetData, str, len);
   return len + varuintSize;
+}
+
+void generateDynamicData(const unsigned int id, const void *data,
+                         const size_t staticLength, byte *genPktData)
+{
+  const byte *pktDynData = data + staticLength;
+  byte *dynDataWriter = genPktData + PACKET_HEADER_LENGTH + staticLength;
+
+  const datatype *genDynFieldType =
+      &parserTable[id][packetStaticCount[id]];
+
+  size_t datasize = 0;
+  for(int i = 0; i < packetDynamicCount[id]; i++) {
+    switch(*genDynFieldType++) {
+      case TYPE_VARUINT: {
+        datasize =
+            generateVaruint(*(unsigned long long *)pktDynData, dynDataWriter);
+        pktDynData += sizeof(unsigned long long);
+      } break;
+
+      case TYPE_VARINT: {
+        datasize = generateVarint(*(long long *)pktDynData, dynDataWriter);
+        pktDynData += sizeof(long long);
+      } break;
+
+      case TYPE_STRING: {
+        size_t strLen;
+        datasize = generateString(*(char **)pktDynData, dynDataWriter, &strLen);
+        pktDynData += strLen;
+      } break;
+
+      default:
+        break;
+    }
+    dynDataWriter += datasize;
+  }
 }
 
 byte *generatePacket(const unsigned int id, const void *data, size_t *size)
@@ -317,49 +355,19 @@ byte *generatePacket(const unsigned int id, const void *data, size_t *size)
 
   size_t staticLength = packetStaticSizes[id];
   size_t dynamicLength = calculateDynamicSize(id, data);
-  size_t totalSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
+  size_t pktSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
 
-  byte *packetData = (byte *)malloc(totalSize * sizeof(byte));
+  byte *genPktData = (byte *)malloc(pktSize * sizeof(byte));
 
-  packetData[0] = MAGIC1;
-  packetData[1] = MAGIC2;
-  memcpy(packetData + PACKET_HEADER_LENGTH, data, staticLength);
+  genPktData[0] = MAGIC1;
+  genPktData[1] = MAGIC2;
+  memcpy(genPktData + PACKET_HEADER_LENGTH, data, staticLength);
 
   if(packetDynamicCount[id] != 0) {
-    const byte *dynamicData = data + staticLength;
-    byte *dynamicDataWriter = packetData + PACKET_HEADER_LENGTH + staticLength;
-
-    const enum datatype *dynamicFieldType =
-        &parserTable[id][packetStaticCount[id]];
-
-    for(int i = 0; i < packetDynamicCount[id]; i++) {
-      switch(*dynamicFieldType++) {
-        case TYPE_VARUINT: {
-          const size_t varuintSize = generateVaruint(
-              *(unsigned long long *)dynamicData, dynamicDataWriter);
-          dynamicDataWriter += varuintSize;
-          dynamicData += sizeof(unsigned long long);
-        } break;
-        case TYPE_VARINT: {
-          const size_t varintSize =
-              generateVarint(*(long long *)dynamicData, dynamicDataWriter);
-          dynamicDataWriter += varintSize;
-          dynamicData += sizeof(long long);
-        } break;
-        case TYPE_STRING: {
-          size_t strLen;
-          const size_t stringSize =
-              generateString(*(char **)dynamicData, dynamicDataWriter, &strLen);
-          dynamicDataWriter += stringSize;
-          dynamicData += strLen;
-        } break;
-        default:
-          break;
-      }
-    }
+    generateDynamicData(id, data, staticLength, genPktData);
   }
 
-  const PacketHeader header = {
+  const PacketHeader genHdr = {
       .length = staticLength + dynamicLength,
       .id = id,
       .seqNumber = totalPacketsSent,
@@ -370,11 +378,11 @@ byte *generatePacket(const unsigned int id, const void *data, size_t *size)
   // TODO
   // crc
 #endif
-  memcpy(packetData + 2, (void *)&header, sizeof(PacketHeader));
+  memcpy(genPktData + 2, (void *)&genHdr, sizeof(PacketHeader));
 
-  *size = totalSize;
+  *size = pktSize;
   totalPacketsSent++;
-  return packetData;
+  return genPktData;
 }
 
 const PacketHeader *getLastHeader()
@@ -382,40 +390,40 @@ const PacketHeader *getLastHeader()
   if(totalPacketsReceived == 0) {
     return 0;
   }
-  return &lastHeaderData;
+  return &lstHdrData;
 }
 
 const void *getLastPacket()
 {
-  return lastPacketData;
+  return lstPktData;
 }
 
 void hardResetParser()
 {
-  lastErrorCode = 0;
+  lstErrCode = 0;
   totalPacketsSent = 0;
   totalPacketsReceived = 0;
-  currentlyParsedPacketLength = 0;
-  currentPacketSize = 0;
-  currentlyParsedPacketId = 0;
+  prsPktLength = 0;
+  prsPktSize = 0;
+  prsPktId = 0;
   resetParsing();
 }
 
 void resetParsing()
 {
   parsingStatus = PSTATUS_DETECT;
-  currentlyParsedPacketId = 0;
-  currentlyParsedPacketLength = 0;
-  currentHeaderSize = 0;
-  currentPacketSize = 0;
-  currentDynamicField = 0;
-  if(lastPacketData != parsedPacketData && parsedPacketData != 0) {
-    free((void *)parsedPacketData);
+  prsPktId = 0;
+  prsPktLength = 0;
+  prsHdrSize = 0;
+  prsPktSize = 0;
+  prsDynField = 0;
+  if(lstPktData != prsPktData && prsPktData != 0) {
+    free((void *)prsPktData);
   }
-  parsedPacketData = 0;
+  prsPktData = 0;
 }
 
 int getLastErrorCode()
 {
-  return lastErrorCode;
+  return lstErrCode;
 }

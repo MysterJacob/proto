@@ -7,7 +7,7 @@
 #define MAGIC1 0x57
 #define MAGIC2 0x5f
 
-enum datatype {
+typedef enum {
   TYPE_INT8 = 1,
   TYPE_INT16 = 2,
   TYPE_INT32 = 3,
@@ -19,7 +19,7 @@ enum datatype {
   TYPE_UINT64 = 9,
   TYPE_VARUINT = 11,
   TYPE_STRING = 12
-};
+} datatype;
 
 #define INT8 char
 #define INT16 short
@@ -33,14 +33,14 @@ enum datatype {
 #define VARUINT unsigned long int
 #define STRING char*
 
-enum errorCode {
+typedef enum {
   PERR_MALLOC_FAILED = 1,
   PERR_BUFFER_OVERFLOW = 2,
   PERR_UNKNOWN_ID = 3,
   PERR_LENGTH_MISMATCH = 4,
   PERR_ACK_MISMATCH = 5,
   PERR_SEQ_MISMATCH = 6,
-};
+} errorCode;
 
 typedef volatile struct __attribute((packed)) {
   unsigned int length;
@@ -50,9 +50,9 @@ typedef volatile struct __attribute((packed)) {
   unsigned short checksum;
 } PacketHeader;
 
-extern const enum datatype* const parserTable[];
+extern const datatype* const parserTable[];
 
-void processByte(byte data);
+void processByte(const byte data);
 
 byte* generatePacket(const unsigned int id, const void* data, size_t* size);
 
