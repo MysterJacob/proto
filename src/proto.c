@@ -67,10 +67,6 @@ const errorCode parsePacketData(const byte data)
 
 void finishRecieiving()
 {
-  if(prsPktSize != prsHdrData.header.length) {
-    reportError(PERR_LENGTH_MISMATCH);
-    return;
-  }
 #ifndef DISABLE_ACK_SEQ_CHECK
   if(parsedHeaderData.header.seqNumber != totalPacketsReceived) {
     reportError(PERR_SEQ_MISMATCH);
@@ -122,6 +118,10 @@ void finishHeaderParsing()
 
 void finishStaticDataParsing()
 {
+  if(prsPktSize != packetStaticSizes[prsPktId]) {
+    reportError(PERR_LENGTH_MISMATCH);
+    return;
+  }
   if(packetDynamicCount[prsPktId] == 0) {
     finishRecieiving();
   } else {
@@ -129,38 +129,90 @@ void finishStaticDataParsing()
   }
 }
 
-const int parseVaruint(const byte data)
+const size_t getVaruint(const byte data, unsigned long long *out)
 {
-  static int counter = 0;
-  static int buffer = 0;
-  const int value = data & 0x7F;
+  static unsigned long long buffer = 0;
+  static size_t size;
+
+  const unsigned long long value = data & 0x7F;
   const int marker = data & 0x80;
 
-  buffer |= value << counter;
-  counter += 7;
+  buffer |= value << size;
+  size += 7;
 
   if(marker == 0) {
-    while(counter > 0) {
-      parsePacketData(buffer & 0xFF);
-      buffer >>= 8;
-      counter -= 8;
-    }
-    counter = 0;
+    *out = buffer;
     buffer = 0;
-  } else if(counter >= 8) {
-    parsePacketData(buffer & 0xFF);
-    buffer >>= 8;
-    counter -= 8;
+    const size_t ret = size;
+    size = 0;
+    return ret;
   }
 
-  return marker;
+  return 0;
+}
+
+const size_t parseVaruint(const byte data)
+{
+  unsigned long long out;
+  size_t size = getVaruint(data, &out);
+  if(size == 0) {
+    return 0;
+  }
+  int i = 0;
+  do {
+    parsePacketData(out & 0xFF);
+    out >>= 8;
+    i += 8;
+  } while(i <= size);
+  return size;
+}
+
+const size_t parseVarint(const byte data)
+{
+  static long long buffer = 0;
+  static int lastMarkerBit = 1;
+  static size_t size;
+
+  const int valueBits = data & 0x7F;
+  const int markerBit = (data & 0x80) >> 7;
+
+  buffer |= valueBits << size;
+  size += 7;
+
+  if(lastMarkerBit == 1) {
+    lastMarkerBit = markerBit;
+    return 0;
+  }
+
+  if(markerBit == 1) {
+    buffer *= -1;
+  }
+
+  int i = 0;
+  do {
+    parsePacketData(buffer & 0xFF);
+    buffer >>= 8;
+    i += 8;
+  } while(i <= size);
+
+  const size_t ret = size;
+  size = 0;
+  buffer = 0;
+  lastMarkerBit = 1;
+
+  return ret;
 }
 
 void processDynamicData(const byte data)
 {
   switch(*prsDynField) {
     case TYPE_VARUINT:
-      if(parseVaruint(data) == 0x0) {
+      if(parseVaruint(data) != 0x0) {
+        prsDynField++;
+      }
+      break;
+    case TYPE_VARINT:
+      if(parseVarint(data) != 0x0) {
         prsDynField++;
       }
       break;
@@ -240,8 +292,7 @@ const size_t calculateDynamicSize(const unsigned int id, const void *data)
   const void *dataPointer = data;
   dataPointer += packetStaticSizes[id];
 
-  const datatype *dynamicFieldType =
-      &parserTable[id][packetStaticCount[id]];
+  const datatype *dynamicFieldType = &parserTable[id][packetStaticCount[id]];
 
   for(int i = 0; i < packetDynamicCount[id]; i++) {
     switch(*dynamicFieldType++) {
@@ -316,8 +367,7 @@ void generateDynamicData(const unsigned int id, const void *data,
   const byte *pktDynData = data + staticLength;
   byte *dynDataWriter = genPktData + PACKET_HEADER_LENGTH + staticLength;
 
-  const datatype *genDynFieldType =
-      &parserTable[id][packetStaticCount[id]];
+  const datatype *genDynFieldType = &parserTable[id][packetStaticCount[id]];
 
   size_t datasize = 0;
   for(int i = 0; i < packetDynamicCount[id]; i++) {

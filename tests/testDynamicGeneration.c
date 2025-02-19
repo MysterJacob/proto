@@ -8,7 +8,6 @@
 
 void TestDynamicVaruintGeneration(CuTest *tc)
 {
-  return;
   resetParsing();
   TestPacket4 tp = {
       .test1 = 0xEE, .varuint = 32 | (15 << 7) | (96 << 14), .test2 = 0xEE};
