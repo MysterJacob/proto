@@ -1,6 +1,7 @@
 #!/bin/bash
 echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $2
 echo "#include \"proto.h\"" >> $2
+echo "#include \"packets.h\"" >> $2
 
 DYNAMIC_TYPE_REGEX="(VARUINT|VARINT|STRING)"
 
@@ -30,6 +31,7 @@ BEGIN {count = 0}
 /^DEF/{count += 1}
 END {printf "const unsigned int definedPacketCount = %s;\n", count}
 ' $1 >> $2
+
 #packetStaticSizes
 awk -v regex=$DYNAMIC_TYPE_REGEX \
 '
@@ -68,6 +70,14 @@ awk -v regex=$DYNAMIC_TYPE_REGEX \
 '
 BEGIN{c=0; printf "const unsigned int packetDynamicCount[] = {"}
 /^DEF/{for(i=4;i<=NF;i+=2) if($i ~ regex){c+=1}; printf "%s, ", c; c=0}
+END {print "0x00};"}
+' $1 >> $2
+
+#packetStructSizes
+awk -v regex=$DYNAMIC_TYPE_REGEX \
+'
+BEGIN{c=0; printf "const size_t packetStructSizes[] = {"}
+/^DEF/{printf "sizeof(%s), ", $2}
 END {print "0x00};"}
 ' $1 >> $2
 

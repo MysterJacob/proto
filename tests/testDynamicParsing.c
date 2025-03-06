@@ -31,6 +31,7 @@ void TestDynamicVaruintParsing(CuTest *tc)
     value |= 1;
   }
 }
+
 void TestDynamicVarintParsing(CuTest *tc)
 {
   resetParsing();
