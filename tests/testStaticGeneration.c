@@ -48,7 +48,7 @@ void TestAckSq(CuTest *tc)
 
   CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-//   const void* received = getLastPacket();
+  //   const void* received = getLastPacket();
   const PacketHeader *header = getLastHeader();
 
   const unsigned int baseSeq = header->seqNumber + 1;
@@ -62,7 +62,7 @@ void TestAckSq(CuTest *tc)
 
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-    const void* received = getLastPacket();
+    const void *received = getLastPacket();
     const PacketHeader *header = getLastHeader();
 
     CuAssertIntEquals(tc, i + baseSeq, header->seqNumber);
