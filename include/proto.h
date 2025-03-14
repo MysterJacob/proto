@@ -25,12 +25,12 @@ typedef enum {
 #define INT16 short
 #define INT32 int
 #define INT64 long int
-#define VARINT long int
+#define VARINT long long int
 #define UINT8 unsigned char
 #define UINT16 unsigned short
 #define UINT32 unsigned int
 #define UINT64 unsigned long int
-#define VARUINT unsigned long int
+#define VARUINT unsigned long long int
 #define STRING char*
 
 typedef enum {

@@ -130,12 +130,12 @@ void finishStaticDataParsing()
   }
 }
 
-const size_t getVaruint(const byte data, unsigned long long *out)
+const size_t getVaruint(const byte data, VARUINT *out)
 {
-  static unsigned long long buffer = 0;
+  static VARUINT buffer = 0;
   static size_t size;
 
-  const unsigned long long value = data & 0x7F;
+  const VARUINT value = data & 0x7F;
   const int marker = data & 0x80;
 
   buffer |= value << size;
@@ -154,7 +154,7 @@ const size_t getVaruint(const byte data, unsigned long long *out)
 
 const size_t parseVaruint(const byte data)
 {
-  unsigned long long out;
+  VARUINT out;
   size_t size = getVaruint(data, &out);
   if(size == 0) {
     return 0;
@@ -165,14 +165,14 @@ const size_t parseVaruint(const byte data)
     parsePacketData(out & 0xFF);
     out >>= 8;
     i += 1;
-  } while(i < sizeof(unsigned long long));
+  } while(i < sizeof(VARUINT));
 
   return size;
 }
 
 const size_t parseVarint(const byte data)
 {
-  static long long buffer = 0;
+  static VARINT buffer = 0;
   static int lastMarkerBit = 1;
   static size_t size;
 
@@ -196,7 +196,7 @@ const size_t parseVarint(const byte data)
     parsePacketData(buffer & 0xFF);
     buffer >>= 8;
     i += 1;
-  } while(i < sizeof(long long));
+  } while(i < sizeof(VARINT));
 
   const size_t ret = size;
   size = 0;
@@ -208,6 +208,36 @@ const size_t parseVarint(const byte data)
 
 const size_t parseString(const byte data)
 {
+  static VARUINT stringLength = 0;
+  static size_t parsedStringSize = 0;
+  static char *string = 0;
+
+  if(stringLength == 0) {
+    getVaruint(data, &stringLength);
+    if(stringLength == 0) return 0;
+
+    string = malloc(sizeof(char) * stringLength);
+    if(string == 0) reportError(PERR_MALLOC_FAILED);
+
+    return 0;
+  }
+
+  string[parsedStringSize++] = data;
+
+  if(stringLength != parsedStringSize) return 0;
+
+  // Heresy
+  long long straddr = (long long)string;
+  for(int i = 0; i < sizeof(char *); i++) {
+    parsePacketData(straddr & 0xFF);
+    straddr >>= 8;
+  }
+
+  const size_t ret = stringLength;
+
+  stringLength = 0;
+  parsedStringSize = 0;
+  return ret;
 }
 
 void processDynamicData(const byte data)
@@ -269,21 +299,21 @@ void processByte(const byte data)
   }
 }
 
-const size_t calculateVaruintSize(const unsigned long long data)
+const size_t calculateVaruintSize(const VARUINT data)
 {
   size_t size = 0;
-  long long mask = 0x7F;
+  VARINT mask = 0x7F;
   int i = 0;
   do {
     size++;
     mask <<= 7;
-  } while((mask & data) > 0 && i <= sizeof(long long) * 8);
+  } while((mask & data) > 0 && i <= sizeof(VARINT) * 8);
   return size;
 }
 
-const size_t calculateVarintSize(const long long data)
+const size_t calculateVarintSize(const VARINT data)
 {
-  long long value = data;
+  VARINT value = data;
   if(value < 0) {
     value *= -1;
   }
@@ -309,20 +339,20 @@ const size_t calculateDynamicSize(const unsigned int id, const void *data)
   for(int i = 0; i < packetDynamicCount[id]; i++) {
     switch(*dynamicFieldType++) {
       case TYPE_VARUINT: {
-        totalSize += calculateVaruintSize(*(unsigned long long *)dataPointer);
-        dataPointer += sizeof(long long);
+        totalSize += calculateVaruintSize(*(VARUINT *)dataPointer);
+        dataPointer += sizeof(VARUINT);
       } break;
 
       case TYPE_VARINT: {
-        totalSize += calculateVarintSize(*(long long *)dataPointer);
-        dataPointer += sizeof(unsigned long long);
+        totalSize += calculateVarintSize(*(VARINT *)dataPointer);
+        dataPointer += sizeof(VARINT);
       } break;
 
       case TYPE_STRING: {
         size_t length = strlen(*(char **)dataPointer);
         size_t size = length + calculateVaruintSize(length);
         totalSize += size;
-        dataPointer += 1 + length + sizeof(unsigned long long);
+        dataPointer += 1 + length + sizeof(VARUINT);
       } break;
 
       default:
@@ -333,7 +363,7 @@ const size_t calculateDynamicSize(const unsigned int id, const void *data)
   return totalSize;
 }
 
-const size_t generateVaruint(unsigned long long varuint, byte *packetData)
+const size_t generateVaruint(VARUINT varuint, byte *packetData)
 {
   const char mask = 0b10000000;
   size_t size = 0;
@@ -345,7 +375,7 @@ const size_t generateVaruint(unsigned long long varuint, byte *packetData)
   return size;
 }
 
-const size_t generateVarint(long long varuint, byte *packetData)
+const size_t generateVarint(VARINT varuint, byte *packetData)
 {
   byte signbit = 0x0;
   if(varuint < 0) {
@@ -385,14 +415,13 @@ void generateDynamicData(const unsigned int id, const void *data,
   for(int i = 0; i < packetDynamicCount[id]; i++) {
     switch(*genDynFieldType++) {
       case TYPE_VARUINT: {
-        datasize =
-            generateVaruint(*(unsigned long long *)pktDynData, dynDataWriter);
-        pktDynData += sizeof(unsigned long long);
+        datasize = generateVaruint(*(VARUINT *)pktDynData, dynDataWriter);
+        pktDynData += sizeof(VARUINT);
       } break;
 
       case TYPE_VARINT: {
-        datasize = generateVarint(*(long long *)pktDynData, dynDataWriter);
-        pktDynData += sizeof(long long);
+        datasize = generateVarint(*(VARINT *)pktDynData, dynDataWriter);
+        pktDynData += sizeof(VARINT);
       } break;
 
       case TYPE_STRING: {

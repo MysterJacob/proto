@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "CuTest.h"
 #include "packets.h"
@@ -60,4 +61,23 @@ void TestDynamicVarintParsing(CuTest *tc)
       value |= 1;
     }
   }
+}
+
+void TestDynamicStrParsing(CuTest *tc)
+{
+  resetParsing();
+  char *message = "The quick brown fox jumps over the lazy dog";
+  TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
+  size_t size;
+  byte *data = generatePacket(3, (void *)&tp, &size);
+
+  for(int i = 0; i < size; i++) {
+    processByte(*data++);
+  }
+
+  const int errCode = getLastErrorCode();
+  CuAssertIntEquals(tc, 0, errCode);
+  TestPacket3 *recv = (TestPacket3 *)getLastPacket();
+  CuAssertTrue(tc, recv != 0);
+  CuAssertIntEquals(tc, 0, strcmp(recv->message, message));
 }
