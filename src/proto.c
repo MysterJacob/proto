@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "crc.h"
 #include "parserTables.h"
 #include "sanity.h"
 
@@ -28,20 +29,19 @@ const datatype *prsDynField = 0;
 size_t prsPktLength = 0;
 size_t prsPktSize = 0;
 size_t prsHdrSize = 0;
+unsigned short prsPktCrc = 0x0000;
 unsigned int prsPktId = 0;
 
 const errorCode reportError(const errorCode code)
 {
-  //   resetParsing();
+  resetParsing();
   lstErrCode = code;
   return code;
 }
 
 void allocateMemoryForPacketData()
 {
-  if(prsPktLength == 0) {
-    return;
-  }
+  if(prsPktLength == 0) return;
   prsPktData = malloc(packetStructSizes[prsPktId]);
 
   if(prsPktData == 0) {
@@ -49,11 +49,6 @@ void allocateMemoryForPacketData()
     return;
   }
   pktWriter = (byte *)prsPktData;
-}
-
-void parseHeaderData(const byte data)
-{
-  prsHdrData.data[prsHdrSize++] = data;
 }
 
 const errorCode parsePacketData(const byte data)
@@ -66,12 +61,25 @@ const errorCode parsePacketData(const byte data)
   return 0;
 }
 
+void parseHeaderData(const byte data)
+{
+  prsHdrData.data[prsHdrSize++] = data;
+}
+
 void finishRecieiving()
 {
   if(prsPktSize != packetStructSizes[prsPktId]) {
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
+
+#ifndef DISABLE_CRC_CHECK
+  if(prsPktCrc != prsHdrData.header.checksum) {
+    reportError(PERR_CRC_MISMATCH);
+    return;
+  }
+#endif
+
 #ifndef DISABLE_ACK_SEQ_CHECK
   if(parsedHeaderData.header.seqNumber != totalPacketsReceived) {
     reportError(PERR_SEQ_MISMATCH);
@@ -91,9 +99,10 @@ void finishRecieiving()
 
 enum {
   PSTATUS_DETECT = 0,
-  PSTATUS_HEADER = 1,
-  PSTATUS_STATICDATA = 2,
-  PSTATUS_DYNAMICDATA = 3,
+  PSTATUS_HEADER_NONCRC = 1,
+  PSTATUS_HEADER = 2,
+  PSTATUS_STATICDATA = 3,
+  PSTATUS_DYNAMICDATA = 4,
 } parsingStatus = PSTATUS_DETECT;
 void finishHeaderParsing()
 {
@@ -263,38 +272,45 @@ void processDynamicData(const byte data)
   }
 }
 
+void calculateDynamicCrc(byte data)
+{
+  prsPktCrc = (prsPktCrc >> 8) ^ crc16_table[(prsPktCrc ^ data) & 0xff];
+}
+
 unsigned short last2Bytes = 0x0;
 void processByte(const byte data)
 {
+  if(lstErrCode != 0) return;
   switch(parsingStatus) {
     case PSTATUS_DETECT:
       last2Bytes = (last2Bytes << 8) & 0xFFFF;
       last2Bytes |= data;
-      if((last2Bytes & 0xFF) == MAGIC2 && (last2Bytes >> 8) == MAGIC1) {
-        parsingStatus = PSTATUS_HEADER;
-      }
+      if((last2Bytes & 0xFF) == MAGIC2 && (last2Bytes >> 8) == MAGIC1)
+        parsingStatus = PSTATUS_HEADER_NONCRC;
+
+      break;
+    case PSTATUS_HEADER_NONCRC:
+      parseHeaderData(data);
+      if(prsHdrSize == 2) parsingStatus = PSTATUS_HEADER;
+
       break;
     case PSTATUS_HEADER:
       parseHeaderData(data);
+      calculateDynamicCrc(data);
+      if(prsHdrSize == sizeof(PacketHeader)) finishHeaderParsing();
 
-      if(prsHdrSize == sizeof(PacketHeader)) {
-        finishHeaderParsing();
-      }
       break;
     case PSTATUS_STATICDATA:
-      if(parsePacketData(data) != 0) {
-        return;
-      }
+      calculateDynamicCrc(data);
+      if(parsePacketData(data) != 0) return;
+      if(prsPktSize == packetStaticSizes[prsPktId]) finishStaticDataParsing();
 
-      if(prsPktSize == packetStaticSizes[prsPktId]) {
-        finishStaticDataParsing();
-      }
       break;
     case PSTATUS_DYNAMICDATA:
+      calculateDynamicCrc(data);
       processDynamicData(data);
-      if(*prsDynField == 0x0) {
-        finishRecieiving();
-      }
+      if(*prsDynField == 0x0) finishRecieiving();
+
       break;
   }
 }
@@ -437,6 +453,20 @@ void generateDynamicData(const unsigned int id, const void *data,
   }
 }
 
+unsigned short calculateStaticCrc(byte *buffer, size_t size)
+{
+  unsigned short crc = 0x0000;
+  while(size--)
+    crc = (crc >> 8) ^ crc16_table[(crc ^ *buffer++) & 0xff];
+  return crc;
+}
+
+void packetInsertCrc(byte *data, size_t size)
+{
+  unsigned short crc = calculateStaticCrc(data + 4, size - 4);
+  memcpy(data + 2, &crc, 2);
+}
+
 byte *generatePacket(const unsigned int id, const void *data, size_t *size)
 {
   if(id >= definedPacketCount) {
@@ -459,17 +489,16 @@ byte *generatePacket(const unsigned int id, const void *data, size_t *size)
   }
 
   const PacketHeader genHdr = {
+      .checksum = 0x0000,
       .length = staticLength + dynamicLength,
       .id = id,
       .seqNumber = totalPacketsSent,
       .ackNumber = totalPacketsReceived,
-      .checksum = 0xCCCC,
   };
-#ifndef DISABLE_CRC_CHECK
-  // TODO
-  // crc
-#endif
+
   memcpy(genPktData + 2, (void *)&genHdr, sizeof(PacketHeader));
+
+  packetInsertCrc(genPktData, pktSize);
 
   *size = pktSize;
   totalPacketsSent++;
@@ -502,15 +531,21 @@ void hardResetParser()
 
 void resetParsing()
 {
+  lstErrCode = 0;
+
   parsingStatus = PSTATUS_DETECT;
+
   prsPktId = 0;
   prsPktLength = 0;
   prsHdrSize = 0;
   prsPktSize = 0;
+  prsPktCrc = 0x0000;
   prsDynField = 0;
+
   if(lstPktData != prsPktData && prsPktData != 0) {
     free((void *)prsPktData);
   }
+
   prsPktData = 0;
 }
 

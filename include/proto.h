@@ -40,14 +40,15 @@ typedef enum {
   PERR_LENGTH_MISMATCH = 4,
   PERR_ACK_MISMATCH = 5,
   PERR_SEQ_MISMATCH = 6,
+  PERR_CRC_MISMATCH = 7
 } errorCode;
 
 typedef volatile struct __attribute((packed)) {
+  unsigned short checksum;
   unsigned int length;
   unsigned int id;
   unsigned int seqNumber;
   unsigned int ackNumber;
-  unsigned short checksum;
 } PacketHeader;
 
 extern const datatype* const parserTable[];

@@ -20,7 +20,7 @@ void TestStaticParsing(CuTest *tc)
                         .id = 1,
                         .seqNumber = 0,
                         .ackNumber = 0,
-                        .checksum = 0x0000},
+                        .checksum = 0x8c4a},
       .packet.packet = {1, 2, 3}
   };
   processByte(MAGIC1);
