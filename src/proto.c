@@ -20,17 +20,17 @@ const byte *prsPktData;
 byte *pktWriter;
 const byte *lstPktData;
 
-int lstErrCode = 0;
+errorCode lstErrCode = 0;
 
-unsigned int totalPacketsSent = 0;
-unsigned int totalPacketsReceived = 0;
+uint32_t totalPacketsSent = 0;
+uint32_t totalPacketsReceived = 0;
 
 const datatype *prsDynField = 0;
 size_t prsPktLength = 0;
 size_t prsPktSize = 0;
 size_t prsHdrSize = 0;
-unsigned short prsPktCrc = 0x0000;
-unsigned int prsPktId = 0;
+uint16_t prsPktCrc = 0x0000;
+uint32_t prsPktId = 0;
 
 const errorCode reportError(const errorCode code)
 {
@@ -277,7 +277,7 @@ void calculateDynamicCrc(byte data)
   prsPktCrc = (prsPktCrc >> 8) ^ crc16_table[(prsPktCrc ^ data) & 0xff];
 }
 
-unsigned short last2Bytes = 0x0;
+uint16_t last2Bytes = 0x0;
 void processByte(const byte data)
 {
   if(lstErrCode != 0) return;
@@ -340,7 +340,7 @@ const size_t calculateVarintSize(const VARINT data)
   return size;
 }
 
-const size_t calculateDynamicSize(const unsigned int id, const void *data)
+const size_t calculateDynamicSize(const uint32_t id, const void *data)
 {
   if(packetDynamicCount[id] == 0) {
     return 0;
@@ -419,7 +419,7 @@ const size_t generateString(const char *str, byte *packetData, size_t *strLen)
   return len + varuintSize;
 }
 
-void generateDynamicData(const unsigned int id, const void *data,
+void generateDynamicData(const uint32_t id, const void *data,
                          const size_t staticLength, byte *genPktData)
 {
   const byte *pktDynData = data + staticLength;
@@ -453,9 +453,9 @@ void generateDynamicData(const unsigned int id, const void *data,
   }
 }
 
-unsigned short calculateStaticCrc(byte *buffer, size_t size)
+uint16_t calculateStaticCrc(byte *buffer, size_t size)
 {
-  unsigned short crc = 0x0000;
+  uint16_t crc = 0x0000;
   while(size--)
     crc = (crc >> 8) ^ crc16_table[(crc ^ *buffer++) & 0xff];
   return crc;
@@ -463,11 +463,11 @@ unsigned short calculateStaticCrc(byte *buffer, size_t size)
 
 void packetInsertCrc(byte *data, size_t size)
 {
-  unsigned short crc = calculateStaticCrc(data + 4, size - 4);
+  uint16_t crc = calculateStaticCrc(data + 4, size - 4);
   memcpy(data + 2, &crc, 2);
 }
 
-byte *generatePacket(const unsigned int id, const void *data, size_t *size)
+byte *generatePacket(const uint32_t id, const void *data, size_t *size)
 {
   if(id >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);

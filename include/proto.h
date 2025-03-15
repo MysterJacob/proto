@@ -1,8 +1,9 @@
 #ifndef protoh
 #define protoh
 #include <stddef.h>
+#include <stdint.h>
 
-#define byte unsigned char
+#define byte uint8_t
 #define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + 2)
 #define MAGIC1 0x57
 #define MAGIC2 0x5f
@@ -20,17 +21,16 @@ typedef enum {
   TYPE_VARUINT = 11,
   TYPE_STRING = 12
 } datatype;
-
-#define INT8 char
-#define INT16 short
-#define INT32 int
-#define INT64 long int
-#define VARINT long long int
-#define UINT8 unsigned char
-#define UINT16 unsigned short
-#define UINT32 unsigned int
-#define UINT64 unsigned long int
-#define VARUINT unsigned long long int
+#define INT8 int8_t
+#define INT16 int16_t
+#define INT32 int32_t
+#define INT64 int64_t
+#define VARINT int64_t
+#define UINT8 uint8_t
+#define UINT16 uint16_t
+#define UINT32 uint32_t
+#define UINT64 uint64_t
+#define VARUINT uint64_t
 #define STRING char*
 
 typedef enum {
@@ -44,11 +44,11 @@ typedef enum {
 } errorCode;
 
 typedef volatile struct __attribute((packed)) {
-  unsigned short checksum;
-  unsigned int length;
-  unsigned int id;
-  unsigned int seqNumber;
-  unsigned int ackNumber;
+  uint16_t checksum;
+  uint32_t length;
+  uint32_t id;
+  uint32_t seqNumber;
+  uint32_t ackNumber;
 } PacketHeader;
 
 extern const datatype* const parserTable[];
