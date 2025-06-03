@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <stddef.h>
-#include <stdlib.h>
 
 #include "CuTest.h"
 #include "packets.h"
@@ -28,23 +27,21 @@ void TestStaticParsing(CuTest *tc)
   for(int i = 0; i < sizeof(PacketHeader) + sizeof(TestPacket1); i++) {
     processByte(data.data[i]);
   }
-  const PacketHeader *ch = getLastHeader();
 
-  CuAssertTrue(tc, ch != 0);
-  CuAssertIntEquals(tc, 0, getLastErrorCode());
-  CuAssertIntEquals(tc, data.packet.header.length, ch->length);
-  CuAssertIntEquals(tc, data.packet.header.id, ch->id);
-  CuAssertIntEquals(tc, data.packet.header.seqNumber, ch->seqNumber);
-  CuAssertIntEquals(tc, data.packet.header.ackNumber, ch->ackNumber);
-  CuAssertIntEquals(tc, data.packet.header.checksum, ch->checksum);
-
-  TestPacket1 *packet = getLastPacket();
+  CuAssertTrue(tc, isNewPacketReady() != 0);
+  TestPacket1 packet;
+  PacketHeader header;
+  getLastPacket(&header, (void *)&packet);
 
   CuAssertIntEquals(tc, 0, getLastErrorCode());
-  CuAssertTrue(tc, packet != 0);
-  CuAssertIntEquals(tc, data.packet.packet.sample8, packet->sample8);
-  CuAssertIntEquals(tc, data.packet.packet.sample16, packet->sample16);
-  CuAssertIntEquals(tc, data.packet.packet.sample32, packet->sample32);
+  CuAssertIntEquals(tc, data.packet.header.length, header.length);
+  CuAssertIntEquals(tc, data.packet.header.id, header.id);
+  CuAssertIntEquals(tc, data.packet.header.seqNumber, header.seqNumber);
+  CuAssertIntEquals(tc, data.packet.header.ackNumber, header.ackNumber);
+  CuAssertIntEquals(tc, data.packet.header.checksum, header.checksum);
 
-  free((void *)packet);
+  CuAssertIntEquals(tc, 0, getLastErrorCode());
+  CuAssertIntEquals(tc, data.packet.packet.sample8, packet.sample8);
+  CuAssertIntEquals(tc, data.packet.packet.sample16, packet.sample16);
+  CuAssertIntEquals(tc, data.packet.packet.sample32, packet.sample32);
 }

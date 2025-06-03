@@ -20,18 +20,18 @@ void TestStaticGeneration(CuTest *tc)
   }
   CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-  const PacketHeader *header = getLastHeader();
-  CuAssertIntEquals(tc, 2, header->id);
+  CuAssertTrue(tc, isNewPacketReady() != 0);
+  TestPacket2 received;
+  PacketHeader header;
+  getLastPacket(&header, (void *)&received);
 
-  TestPacket2 *received = getLastPacket();
-  CuAssertTrue(tc, received != 0);
+  CuAssertIntEquals(tc, 2, header.id);
 
-  CuAssertIntEquals(tc, testPacket.sampleu8, received->sampleu8);
-  CuAssertIntEquals(tc, testPacket.sample16, received->sample16);
-  CuAssertIntEquals(tc, testPacket.sampleU32, received->sampleU32);
+  CuAssertIntEquals(tc, testPacket.sampleu8, received.sampleu8);
+  CuAssertIntEquals(tc, testPacket.sample16, received.sample16);
+  CuAssertIntEquals(tc, testPacket.sampleU32, received.sampleU32);
 
   free((void *)rawData);
-  free((void *)received);
 }
 
 void TestAckSq(CuTest *tc)
@@ -48,11 +48,13 @@ void TestAckSq(CuTest *tc)
 
   CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-  //   const void* received = getLastPacket();
-  const PacketHeader *header = getLastHeader();
+  CuAssertTrue(tc, isNewPacketReady() != 0);
+  TestPacket2 received;
+  PacketHeader header;
+  getLastPacket(&header, (void *)&received);
 
-  const unsigned int baseSeq = header->seqNumber + 1;
-  const unsigned int baseAck = header->ackNumber + 1;
+  const unsigned int baseSeq = header.seqNumber + 1;
+  const unsigned int baseAck = header.ackNumber + 1;
 
   for(int i = 0; i < 0xFFFF; i++) {
     byte *rawData = generatePacket(0, (void *)&tp, &size);
@@ -62,13 +64,12 @@ void TestAckSq(CuTest *tc)
 
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-    const void *received = getLastPacket();
-    const PacketHeader *header = getLastHeader();
+    CuAssertTrue(tc, isNewPacketReady() != 0);
+    getLastPacket(&header, (void *)&received);
 
-    CuAssertIntEquals(tc, i + baseSeq, header->seqNumber);
-    CuAssertIntEquals(tc, i + baseAck, header->ackNumber);
+    CuAssertIntEquals(tc, i + baseSeq, header.seqNumber);
+    CuAssertIntEquals(tc, i + baseAck, header.ackNumber);
 
     free((void *)rawData);
-    free((void *)received);
   }
 }

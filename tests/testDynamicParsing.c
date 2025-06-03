@@ -23,10 +23,14 @@ void TestDynamicVaruintParsing(CuTest *tc)
     }
     const int errCode = getLastErrorCode();
     CuAssertIntEquals(tc, 0, errCode);
-    TestPacket4 *recv = (TestPacket4 *)getLastPacket();
-    CuAssertTrue(tc, recv != 0);
-    CuAssertIntEquals(tc, 0xFF - i, recv->test1);
-    CuAssertIntEquals(tc, value, recv->varuint);
+
+    CuAssertTrue(tc, isNewPacketReady() != 0);
+    TestPacket4 received;
+    PacketHeader header;
+    getLastPacket(&header, (void *)&received);
+
+    CuAssertIntEquals(tc, 0xFF - i, received.test1);
+    CuAssertIntEquals(tc, value, received.varuint);
 
     value <<= 1;
     value |= 1;
@@ -50,10 +54,12 @@ void TestDynamicVarintParsing(CuTest *tc)
     }
     const int errCode = getLastErrorCode();
     CuAssertIntEquals(tc, 0, errCode);
-    TestPacket5 *recv = (TestPacket5 *)getLastPacket();
-    CuAssertTrue(tc, recv != 0);
-    CuAssertIntEquals(tc, 0xFF - i, recv->test1);
-    CuAssertIntEquals(tc, value * sign, recv->varint);
+    CuAssertTrue(tc, isNewPacketReady() != 0);
+    TestPacket5 received;
+    PacketHeader header;
+    getLastPacket(&header, (void *)&received);
+    CuAssertIntEquals(tc, 0xFF - i, received.test1);
+    CuAssertIntEquals(tc, value * sign, received.varint);
 
     sign *= -1;
     if(sign == 1) {
@@ -77,7 +83,10 @@ void TestDynamicStrParsing(CuTest *tc)
 
   const int errCode = getLastErrorCode();
   CuAssertIntEquals(tc, 0, errCode);
-  TestPacket3 *recv = (TestPacket3 *)getLastPacket();
-  CuAssertTrue(tc, recv != 0);
-  CuAssertIntEquals(tc, 0, strcmp(recv->message, message));
+  CuAssertTrue(tc, isNewPacketReady() != 0);
+  TestPacket3 received;
+  PacketHeader header;
+  getLastPacket(&header, (void *)&received);
+
+  CuAssertIntEquals(tc, 0, strcmp(received.message, message));
 }

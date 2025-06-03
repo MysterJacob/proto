@@ -20,8 +20,7 @@ void TestDetectingSimpleHeader(CuTest *tc)
   };
   for(int i = 0; i < 0xFF; i++) {
     processByte(0x8C);
-    const PacketHeader *ch = getLastHeader();
-    CuAssertTrue(tc, ch == 0);
+    CuAssertTrue(tc, isNewPacketReady() == 0);
   }
 
   processByte(0x57);
@@ -29,13 +28,14 @@ void TestDetectingSimpleHeader(CuTest *tc)
   for(int i = 0; i < sizeof(PacketHeader); i++) {
     processByte(testHeader.data[i]);
   }
-  const PacketHeader *header = getLastHeader();
-  CuAssertTrue(tc, header != 0);
+  CuAssertTrue(tc, isNewPacketReady() != 0);
+  PacketHeader header;
+  getLastPacket(&header, NULL);
   CuAssertIntEquals(tc, 0, getLastErrorCode());
-  CuAssertIntEquals(tc, testHeader.ph.length, header->length);
-  CuAssertIntEquals(tc, testHeader.ph.id, header->id);
-  CuAssertIntEquals(tc, testHeader.ph.seqNumber, header->seqNumber);
-  CuAssertIntEquals(tc, testHeader.ph.ackNumber, header->ackNumber);
+  CuAssertIntEquals(tc, testHeader.ph.length, header.length);
+  CuAssertIntEquals(tc, testHeader.ph.id, header.id);
+  CuAssertIntEquals(tc, testHeader.ph.seqNumber, header.seqNumber);
+  CuAssertIntEquals(tc, testHeader.ph.ackNumber, header.ackNumber);
 }
 
 unsigned short calculateCrc(byte *buffer, size_t size)
@@ -72,10 +72,11 @@ void TestDetectingMultipleHeaders(CuTest *tc)
       processByte(testHeader.data[i]);
     }
 
-    const PacketHeader *header = getLastHeader();
-    CuAssertTrue(tc, header != 0);
+    CuAssertTrue(tc, isNewPacketReady() != 0);
+    PacketHeader header;
+    getLastPacket(&header, NULL);
     CuAssertIntEquals(tc, 0, getLastErrorCode());
-    CuAssertIntEquals(tc, testHeader.ph.seqNumber, header->seqNumber);
-    CuAssertIntEquals(tc, testHeader.ph.ackNumber, header->ackNumber);
+    CuAssertIntEquals(tc, testHeader.ph.seqNumber, header.seqNumber);
+    CuAssertIntEquals(tc, testHeader.ph.ackNumber, header.ackNumber);
   }
 }

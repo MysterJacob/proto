@@ -57,10 +57,14 @@ void processByte(const byte data);
 
 byte* generatePacket(const unsigned int id, const void* data, size_t* size);
 
-const PacketHeader* getLastHeader();
-const void* getLastPacket();
+int isNewPacketReady();
+const uint32_t getLastPacket(PacketHeader* header, void* packetData);
+
+typedef void (*PacketHandler)(const PacketHeader header, void* packetData);
+void setPacketCallback(PacketHandler handler);
 
 void resetParsing();
 void hardResetParser();
 int getLastErrorCode();
+
 #endif

@@ -1,5 +1,7 @@
 #!/bin/bash
 echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $2
+
+# parserTables.h
 echo "#include \"proto.h\"" >> $2
 echo "#include \"packets.h\"" >> $2
 
@@ -81,9 +83,22 @@ BEGIN{c=0; printf "const size_t packetStructSizes[] = {"}
 END {print "0x00};"}
 ' $1 >> $2
 
-# Structs
+
+# packets.h
 echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $3
 echo "#include \"proto.h\"" >> $3
+
+# Ids
+awk -v regex="$DYNAMIC_TYPE_REGEX" \
+'
+BEGIN{print "enum {"; packet_id = 0;}
+/^DEF/{
+  printf "%s_ID = %d,\n", $2, packet_id;
+  packet_id+=1;
+}
+END{print "};"}
+' $1 >> $3
+# Structs
 awk -v regex="$DYNAMIC_TYPE_REGEX" \
 '
 /^DEF/{

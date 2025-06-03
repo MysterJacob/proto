@@ -14,11 +14,12 @@ static union {
   PacketHeader header;
   byte data[sizeof(PacketHeader)];
 } prsHdrData = {};
-PacketHeader lstHdrData = {};
 
-const byte *prsPktData;
+void *prsPktData;
 byte *pktWriter;
-const byte *lstPktData;
+
+byte newPktRdy = 0;
+PacketHandler pktPrsCallback = NULL;
 
 errorCode lstErrCode = 0;
 
@@ -41,7 +42,9 @@ const errorCode reportError(const errorCode code)
 
 void allocateMemoryForPacketData()
 {
-  if(prsPktLength == 0) return;
+  if(prsPktLength == 0) {
+    return;
+  }
   prsPktData = malloc(packetStructSizes[prsPktId]);
 
   if(prsPktData == 0) {
@@ -49,6 +52,19 @@ void allocateMemoryForPacketData()
     return;
   }
   pktWriter = (byte *)prsPktData;
+}
+
+void dealocateLastPacket()
+{
+  newPktRdy = 0;
+  free((void *)prsPktData);
+  prsPktSize = 0;
+  prsHdrSize = 0;
+  prsPktLength = 0;
+  prsPktData = 0;
+  for(int i = 0; i < sizeof(PacketHeader); i++) {
+    prsHdrData.data[i] = 0x00;
+  }
 }
 
 const errorCode parsePacketData(const byte data)
@@ -64,6 +80,22 @@ const errorCode parsePacketData(const byte data)
 void parseHeaderData(const byte data)
 {
   prsHdrData.data[prsHdrSize++] = data;
+}
+
+enum {
+  PSTATUS_DETECT = 0,
+  PSTATUS_HEADER_NONCRC = 1,
+  PSTATUS_HEADER = 2,
+  PSTATUS_STATICDATA = 3,
+  PSTATUS_DYNAMICDATA = 4,
+} parsingStatus = PSTATUS_DETECT;
+
+void restartParsing()
+{
+  parsingStatus = PSTATUS_DETECT;
+  prsPktId = 0;
+  prsPktCrc = 0x0000;
+  prsDynField = 0;
 }
 
 void finishRecieiving()
@@ -92,18 +124,11 @@ void finishRecieiving()
 #endif
 
   totalPacketsReceived++;
-  lstHdrData = prsHdrData.header;
-  lstPktData = prsPktData;
-  resetParsing();
+  newPktRdy = 1;
+  restartParsing();
+  if(pktPrsCallback != NULL) pktPrsCallback(prsHdrData.header, prsPktData);
 }
 
-enum {
-  PSTATUS_DETECT = 0,
-  PSTATUS_HEADER_NONCRC = 1,
-  PSTATUS_HEADER = 2,
-  PSTATUS_STATICDATA = 3,
-  PSTATUS_DYNAMICDATA = 4,
-} parsingStatus = PSTATUS_DETECT;
 void finishHeaderParsing()
 {
   prsPktId = prsHdrData.header.id;
@@ -223,17 +248,23 @@ const size_t parseString(const byte data)
 
   if(stringLength == 0) {
     getVaruint(data, &stringLength);
-    if(stringLength == 0) return 0;
+    if(stringLength == 0) {
+      return 0;
+    }
 
     string = malloc(sizeof(char) * stringLength);
-    if(string == 0) reportError(PERR_MALLOC_FAILED);
+    if(string == 0) {
+      reportError(PERR_MALLOC_FAILED);
+    }
 
     return 0;
   }
 
   string[parsedStringSize++] = data;
 
-  if(stringLength != parsedStringSize) return 0;
+  if(stringLength != parsedStringSize) {
+    return 0;
+  }
 
   // Heresy
   long long straddr = (long long)string;
@@ -280,36 +311,50 @@ void calculateDynamicCrc(byte data)
 uint16_t last2Bytes = 0x0;
 void processByte(const byte data)
 {
-  if(lstErrCode != 0) return;
+  if(lstErrCode != 0) {
+    return;
+  }
   switch(parsingStatus) {
     case PSTATUS_DETECT:
       last2Bytes = (last2Bytes << 8) & 0xFFFF;
       last2Bytes |= data;
-      if((last2Bytes & 0xFF) == MAGIC2 && (last2Bytes >> 8) == MAGIC1)
+      if((last2Bytes & 0xFF) == MAGIC2 && (last2Bytes >> 8) == MAGIC1) {
+        dealocateLastPacket();
         parsingStatus = PSTATUS_HEADER_NONCRC;
+      }
 
       break;
     case PSTATUS_HEADER_NONCRC:
       parseHeaderData(data);
-      if(prsHdrSize == 2) parsingStatus = PSTATUS_HEADER;
+      if(prsHdrSize == 2) {
+        parsingStatus = PSTATUS_HEADER;
+      }
 
       break;
     case PSTATUS_HEADER:
       parseHeaderData(data);
       calculateDynamicCrc(data);
-      if(prsHdrSize == sizeof(PacketHeader)) finishHeaderParsing();
+      if(prsHdrSize == sizeof(PacketHeader)) {
+        finishHeaderParsing();
+      }
 
       break;
     case PSTATUS_STATICDATA:
       calculateDynamicCrc(data);
-      if(parsePacketData(data) != 0) return;
-      if(prsPktSize == packetStaticSizes[prsPktId]) finishStaticDataParsing();
+      if(parsePacketData(data) != 0) {
+        return;
+      }
+      if(prsPktSize == packetStaticSizes[prsPktId]) {
+        finishStaticDataParsing();
+      }
 
       break;
     case PSTATUS_DYNAMICDATA:
       calculateDynamicCrc(data);
       processDynamicData(data);
-      if(*prsDynField == 0x0) finishRecieiving();
+      if(*prsDynField == 0x0) {
+        finishRecieiving();
+      }
 
       break;
   }
@@ -365,10 +410,10 @@ const size_t calculateDynamicSize(const uint32_t id, const void *data)
       } break;
 
       case TYPE_STRING: {
-        size_t length = strlen(*(char **)dataPointer);
+        size_t length = strlen(*(STRING *)dataPointer);
         size_t size = length + calculateVaruintSize(length);
         totalSize += size;
-        dataPointer += 1 + length + sizeof(VARUINT);
+        dataPointer += sizeof(STRING);
       } break;
 
       default:
@@ -442,8 +487,9 @@ void generateDynamicData(const uint32_t id, const void *data,
 
       case TYPE_STRING: {
         size_t strLen;
-        datasize = generateString(*(char **)pktDynData, dynDataWriter, &strLen);
-        pktDynData += strLen;
+        datasize =
+            generateString(*(STRING *)pktDynData, dynDataWriter, &strLen);
+        pktDynData += sizeof(STRING);
       } break;
 
       default:
@@ -456,8 +502,9 @@ void generateDynamicData(const uint32_t id, const void *data,
 uint16_t calculateStaticCrc(byte *buffer, size_t size)
 {
   uint16_t crc = 0x0000;
-  while(size--)
+  while(size--) {
     crc = (crc >> 8) ^ crc16_table[(crc ^ *buffer++) & 0xff];
+  }
   return crc;
 }
 
@@ -478,7 +525,7 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   size_t dynamicLength = calculateDynamicSize(id, data);
   size_t pktSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
 
-  byte *genPktData = (byte *)malloc(pktSize * sizeof(byte));
+  byte *const genPktData = (byte *)malloc(pktSize * sizeof(byte));
 
   genPktData[0] = MAGIC1;
   genPktData[1] = MAGIC2;
@@ -505,27 +552,32 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   return genPktData;
 }
 
-const PacketHeader *getLastHeader()
+int isNewPacketReady()
 {
-  if(totalPacketsReceived == 0) {
-    return 0;
-  }
-  return &lstHdrData;
+  return newPktRdy;
 }
 
-const void *getLastPacket()
+const uint32_t getLastPacket(PacketHeader *header, void *packetData)
 {
-  return lstPktData;
+  if(newPktRdy == 0) return -1;
+  if(header != NULL) {
+    *header = prsHdrData.header;
+  }
+  if(packetData != NULL) {
+    memcpy(packetData, prsPktData, prsPktSize);
+  }
+  return prsHdrData.header.id;
+}
+
+void setPacketCallback(PacketHandler handler)
+{
+  pktPrsCallback = handler;
 }
 
 void hardResetParser()
 {
-  lstErrCode = 0;
   totalPacketsSent = 0;
   totalPacketsReceived = 0;
-  prsPktLength = 0;
-  prsPktSize = 0;
-  prsPktId = 0;
   resetParsing();
 }
 
@@ -542,10 +594,10 @@ void resetParsing()
   prsPktCrc = 0x0000;
   prsDynField = 0;
 
-  if(lstPktData != prsPktData && prsPktData != 0) {
-    free((void *)prsPktData);
+  if(newPktRdy) {
+    dealocateLastPacket();
   }
-
+  newPktRdy = 0;
   prsPktData = 0;
 }
 
