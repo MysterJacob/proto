@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "CuTest.h"
 #include "packets.h"
@@ -7,6 +8,7 @@
 
 void TestStaticParsing(CuTest *tc)
 {
+  puts("Testing Static Parsing");
   resetParsing();
   union {
     volatile struct {
@@ -22,8 +24,9 @@ void TestStaticParsing(CuTest *tc)
                         .checksum = 0x8389},
       .packet.packet = {1, 2, 3}
   };
-  processByte(MAGIC1);
-  processByte(MAGIC2);
+  for(size_t i =0;i<MAGIC_SIZE;i++) {
+    processByte(MAGIC_BYTES[i]);
+  }
   for(int i = 0; i < sizeof(PacketHeader) + sizeof(TestPacket1); i++) {
     processByte(data.data[i]);
   }

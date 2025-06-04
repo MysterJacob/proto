@@ -8,6 +8,7 @@
 
 void TestDynamicVaruintGeneration(CuTest *tc)
 {
+  puts("Testing Dynamic Varuint Creation");
   resetParsing();
   TestPacket4 tp = {
       .test1 = 0xEE, .varuint = 32 | (15 << 7) | (96 << 14), .test2 = 0xEE};
@@ -29,6 +30,7 @@ void TestDynamicVaruintGeneration(CuTest *tc)
 
 void TestDynamicVarintGeneration(CuTest *tc)
 {
+  puts("Testing Dynamic Varint Creation");
   resetParsing();
   TestPacket5 tp = {.test1 = 0xEE, .varint = -35172, .test2 = 0xEE};
   size_t size;
@@ -48,6 +50,7 @@ void TestDynamicVarintGeneration(CuTest *tc)
 
 void TestDynamicStrGeneration(CuTest *tc)
 {
+  puts("Testing Dynamic String Creation");
   resetParsing();
   char *message = "Hello world!";
   TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};

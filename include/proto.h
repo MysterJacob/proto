@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 #define byte uint8_t
-#define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + 2)
-#define MAGIC1 0x57
-#define MAGIC2 0x5f
+#define MAGIC_BYTES "\x57\x5F\xDE"
+#define MAGIC_SIZE sizeof(MAGIC_BYTES) - 1
+#define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + MAGIC_SIZE)
 
 typedef enum {
   TYPE_INT8 = 1,

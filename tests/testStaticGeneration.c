@@ -9,6 +9,7 @@
 
 void TestStaticGeneration(CuTest *tc)
 {
+  puts("Testing Static Generation");
 //   resetParsing();
   hardResetParser();
   TestPacket2 testPacket = {0xDD, 0xFFF, 0xCCCCCCCC, 0xAAAAAAA};
@@ -37,6 +38,7 @@ void TestStaticGeneration(CuTest *tc)
 
 void TestAckSq(CuTest *tc)
 {
+  puts("Testing Ack/Seq");
   resetParsing();
 
   TestPacket0 tp = {};

@@ -10,6 +10,10 @@
 #include "parserTables.h"
 #include "sanity.h"
 
+const size_t MagicSize = MAGIC_SIZE;
+const size_t PacketHeaderLength = PACKET_HEADER_LENGTH;
+const byte *MagicBytes = (byte *)MAGIC_BYTES;
+
 static union {
   PacketHeader header;
   byte data[sizeof(PacketHeader)];
@@ -17,6 +21,8 @@ static union {
 
 void *prsPktData;
 byte *pktWriter;
+
+const size_t CrcSize = sizeof(prsHdrData.header.checksum);
 
 byte newPktRdy = 0;
 PacketHandler pktPrsCallback = NULL;
@@ -308,7 +314,16 @@ void calculateDynamicCrc(byte data)
   prsPktCrc = (prsPktCrc >> 8) ^ crc16_table[(prsPktCrc ^ data) & 0xff];
 }
 
-uint16_t last2Bytes = 0x0;
+size_t magicPointer = 0;
+void incrementMagicPointer(byte data)
+{
+  if((MagicBytes[magicPointer] ^ data) == 0x0)
+    magicPointer++;
+  else if((MagicBytes[0] ^ data) == 0x0)
+    magicPointer = 1;
+  else
+    magicPointer = 0;
+}
 void processByte(const byte data)
 {
   if(lstErrCode != 0) {
@@ -316,17 +331,17 @@ void processByte(const byte data)
   }
   switch(parsingStatus) {
     case PSTATUS_DETECT:
-      last2Bytes = (last2Bytes << 8) & 0xFFFF;
-      last2Bytes |= data;
-      if((last2Bytes & 0xFF) == MAGIC2 && (last2Bytes >> 8) == MAGIC1) {
+      incrementMagicPointer(data);
+      if(magicPointer >= MagicSize) {
         dealocateLastPacket();
+        magicPointer = 0;
         parsingStatus = PSTATUS_HEADER_NONCRC;
       }
 
       break;
     case PSTATUS_HEADER_NONCRC:
       parseHeaderData(data);
-      if(prsHdrSize == 2) {
+      if(prsHdrSize == CrcSize) {
         parsingStatus = PSTATUS_HEADER;
       }
 
@@ -436,14 +451,14 @@ const size_t generateVaruint(VARUINT varuint, byte *packetData)
   return size;
 }
 
-const size_t generateVarint(VARINT varuint, byte *packetData)
+const size_t generateVarint(VARINT varint, byte *packetData)
 {
   byte signbit = 0x0;
-  if(varuint < 0) {
+  if(varint < 0) {
     signbit = 0x80;
-    varuint *= -1;
+    varint *= -1;
   }
-  size_t size = generateVaruint(varuint, packetData);
+  size_t size = generateVaruint(varint, packetData);
   size_t offset = size;
   if(offset < 2) {
     offset = 2;
@@ -468,7 +483,7 @@ void generateDynamicData(const uint32_t id, const void *data,
                          const size_t staticLength, byte *genPktData)
 {
   const byte *pktDynData = data + staticLength;
-  byte *dynDataWriter = genPktData + PACKET_HEADER_LENGTH + staticLength;
+  byte *dynDataWriter = genPktData + PacketHeaderLength + staticLength;
 
   const datatype *genDynFieldType = &parserTable[id][packetStaticCount[id]];
 
@@ -510,8 +525,9 @@ uint16_t calculateStaticCrc(byte *buffer, size_t size)
 
 void packetInsertCrc(byte *data, size_t size)
 {
-  uint16_t crc = calculateStaticCrc(data + 4, size - 4);
-  memcpy(data + 2, &crc, 2);
+  const size_t offset = MagicSize + CrcSize;
+  uint16_t crc = calculateStaticCrc(data + offset, size - offset);
+  memcpy(data + MagicSize, &crc, CrcSize);
 }
 
 byte *generatePacket(const uint32_t id, const void *data, size_t *size)
@@ -523,13 +539,12 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
 
   size_t staticLength = packetStaticSizes[id];
   size_t dynamicLength = calculateDynamicSize(id, data);
-  size_t pktSize = staticLength + dynamicLength + PACKET_HEADER_LENGTH;
+  size_t pktSize = staticLength + dynamicLength + PacketHeaderLength;
 
   byte *const genPktData = (byte *)malloc(pktSize * sizeof(byte));
 
-  genPktData[0] = MAGIC1;
-  genPktData[1] = MAGIC2;
-  memcpy(genPktData + PACKET_HEADER_LENGTH, data, staticLength);
+  memcpy(genPktData, MagicBytes, MagicSize);
+  memcpy(genPktData + PacketHeaderLength, data, staticLength);
 
   if(packetDynamicCount[id] != 0) {
     generateDynamicData(id, data, staticLength, genPktData);
@@ -543,12 +558,12 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
       .ackNumber = totalPacketsReceived,
   };
 
-  memcpy(genPktData + 2, (void *)&genHdr, sizeof(PacketHeader));
+  memcpy(genPktData + MagicSize, (void *)&genHdr, sizeof(PacketHeader));
 
   packetInsertCrc(genPktData, pktSize);
 
-  *size = pktSize;
   totalPacketsSent++;
+  *size = pktSize;
   return genPktData;
 }
 
@@ -593,6 +608,7 @@ void resetParsing()
   prsPktSize = 0;
   prsPktCrc = 0x0000;
   prsDynField = 0;
+  magicPointer = 0;
 
   if(newPktRdy) {
     dealocateLastPacket();

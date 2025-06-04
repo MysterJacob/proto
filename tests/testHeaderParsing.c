@@ -8,6 +8,7 @@
 
 void TestDetectingSimpleHeader(CuTest *tc)
 {
+  puts("Testing Simple Header Detection");
   hardResetParser();
   union {
     PacketHeader ph;
@@ -24,8 +25,9 @@ void TestDetectingSimpleHeader(CuTest *tc)
     CuAssertTrue(tc, isNewPacketReady() == 0);
   }
 
-  processByte(0x57);
-  processByte(0x5f);
+  for(size_t i =0;i<MAGIC_SIZE;i++) {
+    processByte(MAGIC_BYTES[i]);
+  }
   for(int i = 0; i < sizeof(PacketHeader); i++) {
     processByte(testHeader.data[i]);
   }
@@ -49,6 +51,7 @@ unsigned short calculateCrc(byte *buffer, size_t size)
 
 void TestDetectingMultipleHeaders(CuTest *tc)
 {
+  puts("Testing Multiple Header Detection");
   resetParsing();
   union {
     PacketHeader ph;
@@ -66,9 +69,10 @@ void TestDetectingMultipleHeaders(CuTest *tc)
     testHeader.ph.ackNumber = 0xFFFF - i;
     testHeader.ph.checksum =
         calculateCrc(testHeader.data + 2, sizeof(PacketHeader) - 2);
-    processByte(0x57);
-    processByte(0x5f);
 
+    for(size_t i =0;i<MAGIC_SIZE;i++) {
+      processByte(MAGIC_BYTES[i]);
+    }
     for(int i = 0; i < sizeof(PacketHeader); i++) {
       processByte(testHeader.data[i]);
     }
