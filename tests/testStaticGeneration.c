@@ -25,7 +25,7 @@ void TestStaticGeneration(CuTest *tc)
   CuAssertTrue(tc, isNewPacketReady() != 0);
   TestPacket2 received;
   PacketHeader header;
-  getLastPacket(&header, (void *)&received);
+  getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 2, header.id);
 
@@ -54,7 +54,7 @@ void TestAckSq(CuTest *tc)
   CuAssertTrue(tc, isNewPacketReady() != 0);
   TestPacket2 received;
   PacketHeader header;
-  getLastPacket(&header, (void *)&received);
+  getPacket(&header, (void *)&received);
 
   const unsigned int baseSeq = header.seqNumber + 1;
   const unsigned int baseAck = header.ackNumber + 1;
@@ -68,7 +68,7 @@ void TestAckSq(CuTest *tc)
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
     CuAssertTrue(tc, isNewPacketReady() != 0);
-    getLastPacket(&header, (void *)&received);
+    getPacket(&header, (void *)&received);
 
     CuAssertIntEquals(tc, i + baseSeq, header.seqNumber);
     CuAssertIntEquals(tc, i + baseAck, header.ackNumber);

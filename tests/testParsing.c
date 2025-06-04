@@ -34,7 +34,7 @@ void TestStaticParsing(CuTest *tc)
   CuAssertTrue(tc, isNewPacketReady() != 0);
   TestPacket1 packet;
   PacketHeader header;
-  getLastPacket(&header, (void *)&packet);
+  getPacket(&header, (void *)&packet);
 
   CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertIntEquals(tc, data.packet.header.length, header.length);

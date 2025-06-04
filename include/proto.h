@@ -58,7 +58,8 @@ void processByte(const byte data);
 byte* generatePacket(const unsigned int id, const void* data, size_t* size);
 
 int isNewPacketReady();
-const uint32_t getLastPacket(PacketHeader* header, void* packetData);
+const size_t getPacketLength();
+const uint32_t getPacket(PacketHeader* header, void* packetData);
 
 typedef void (*PacketHandler)(const PacketHeader header, void* packetData);
 void setPacketCallback(PacketHandler handler);

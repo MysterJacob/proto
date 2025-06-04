@@ -39,9 +39,17 @@ $(INCLUDE_DIR)parserTables.h: FORCE
 FORCE:
 $(TARGET): mkdir $(TARGET_HEADER) $(INCLUDE_DIR)parserTables.h 
 	$(CC) $(CFLAGS) \
+	-shared \
+	-fPIC \
+	-o $(BIN_DIR)obj/proto.so \
+	-I$(INCLUDE_DIR) $(SRCS)
+
+	$(CC) $(CFLAGS) \
+	-fPIC \
 	-I$(INCLUDE_DIR) \
 	-c $(SRCS) \
 	-o $(BIN_DIR)obj/proto.o
+
 	ar rvs $(TARGET) $(BIN_DIR)obj/proto.o
 
 $(TARGET_HEADER):

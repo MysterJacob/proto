@@ -572,7 +572,12 @@ int isNewPacketReady()
   return newPktRdy;
 }
 
-const uint32_t getLastPacket(PacketHeader *header, void *packetData)
+const size_t getPacketLength()
+{
+  return prsHdrData.header.length;
+}
+
+const uint32_t getPacket(PacketHeader *header, void *packetData)
 {
   if(newPktRdy == 0) return -1;
   if(header != NULL) {

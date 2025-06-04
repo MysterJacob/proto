@@ -28,7 +28,7 @@ uint64_t loop()
 
     MemoryTestPacket received;
     PacketHeader header;
-    getLastPacket(&header, (void *)&received);
+    getPacket(&header, (void *)&received);
 
     free(data);
     free(received.t1);
