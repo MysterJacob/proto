@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <assert.h>
 #include <stddef.h>
 
@@ -16,7 +17,7 @@ void TestDetectingSimpleHeader(CuTest *tc)
              .id = 0x0,
              .seqNumber = 0xC8,
              .ackNumber = 0xD1FFC1,
-             .checksum = 0x6a5c}
+             .checksum = 0x0e68}
   };
   for(int i = 0; i < 0xFF; i++) {
     processByte(0x8C);

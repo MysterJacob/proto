@@ -9,8 +9,9 @@
 
 void TestStaticGeneration(CuTest *tc)
 {
-  resetParsing();
-  TestPacket2 testPacket = {0xDD, 0xFFFF, 0xCCCCCCCC, 0xAAAAAAAA};
+//   resetParsing();
+  hardResetParser();
+  TestPacket2 testPacket = {0xDD, 0xFFF, 0xCCCCCCCC, 0xAAAAAAA};
 
   size_t size = 0;
 

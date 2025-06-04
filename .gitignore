@@ -8,3 +8,4 @@ include/parserTables.h
 include/packets.h
 include/config.h
 .cache
+python/proto.py

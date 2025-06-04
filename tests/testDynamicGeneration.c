@@ -26,6 +26,7 @@ void TestDynamicVaruintGeneration(CuTest *tc)
   }
   CuAssertIntEquals(tc, 0, chk);
 }
+
 void TestDynamicVarintGeneration(CuTest *tc)
 {
   resetParsing();
@@ -44,6 +45,7 @@ void TestDynamicVarintGeneration(CuTest *tc)
   }
   CuAssertIntEquals(tc, 0, chk);
 }
+
 void TestDynamicStrGeneration(CuTest *tc)
 {
   resetParsing();
