@@ -3,16 +3,24 @@ from ctypes import (
     Structure,
     POINTER,
     byref,
+    c_int,
+    c_int8,
+    c_int16,
+    c_int32,
+    c_int64,
     c_uint,
     c_uint8,
     c_uint16,
     c_uint32,
+    c_uint64,
     c_size_t,
     c_void_p,
     c_ubyte,
+    c_char_p,
     create_string_buffer,
 )
 from enum import IntEnum
+
 
 class ErrorCode(IntEnum):
     PERR_MALLOC_FAILED = 1
@@ -36,11 +44,26 @@ class PacketHeader(Structure):
 
 
 class Packet(Structure):
+    _id: int
     _pack_ = 1
-    pass
+
+
+ctype = {
+    "INT8": c_int8,
+    "INT16": c_int16,
+    "INT32": c_int32,
+    "INT64": c_int64,
+    "VARINT": c_int64,
+    "UINT8": c_uint8,
+    "UINT16": c_uint16,
+    "UINT32": c_uint32,
+    "UINT64": c_uint64,
+    "VARUINT": c_uint64,
+    "STRING": c_char_p,
+}
 
 # CREATOR INSERT PACKETS
-
+packets=[Packet]
 # CREATOR INSERT PACKETS
 
 
@@ -60,8 +83,10 @@ class Proto:
         return self.__proto.processByte(data)
 
     # byte* generatePacket(const unsigned int id, const void* data, size_t* size);
-    def generatePacket(self, id: int, data: Packet) -> bytes:
-        return self.__proto.generatePacket(id, byref(data), None)
+    def generatePacket(self, data: Packet) -> tuple[int, bytes]:
+        size = c_size_t(0)
+        buffer = self.__proto.generatePacket(data._id, byref(data), byref(size))
+        return int(size.value), buffer
 
     # int isNewPacketReady();
     def isNewPacketReady(self) -> bool:
@@ -77,7 +102,10 @@ class Proto:
         data = create_string_buffer(self.getPacketLength())
         id = self.__proto.getPacket(byref(header), data)
 
-        return id, header, data
+        packetType = packets[id]
+        packet = packetType.from_buffer(data)
+
+        return id, header, packet
 
     # void resetParsing();
     def resetParsing(self):

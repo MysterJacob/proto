@@ -1,9 +1,13 @@
 #!/bin/bash
-echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $2
+configFile="$1"
+parserTables="$2"
+packetsh="$3"
+configh="$4"
+echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $parserTables
 
 # parserTables.h
-echo "#include \"proto.h\"" >> $2
-echo "#include \"packets.h\"" >> $2
+echo "#include \"proto.h\"" >> $parserTables
+echo "#include \"packets.h\"" >> $parserTables
 
 DYNAMIC_TYPE_REGEX="(VARUINT|VARINT|STRING)"
 
@@ -16,7 +20,7 @@ for(i=4;i<=NF;i+=2) if(!($i ~ regex)){ printf "TYPE_%s, ", $i; }
 for(i=4;i<=NF;i+=2) if(($i ~ regex)){ printf "TYPE_%s, ", $i; }
 print "0x00};"
 }
-' $1 >> $2
+' $configFile >> $parserTables
 
 # Parser table
 awk \
@@ -24,7 +28,7 @@ awk \
 BEGIN {printf "const datatype *const parserTable[] = {"}
 /^DEF/{printf "%s_pte, ", $2}
 END {print "0};"}
-' $1 >> $2
+' $configFile >> $parserTables
 
 #definedPacketCount
 awk \
@@ -32,7 +36,7 @@ awk \
 BEGIN {count = 0}
 /^DEF/{count += 1}
 END {printf "const unsigned int definedPacketCount = %s;\n", count}
-' $1 >> $2
+' $configFile >> $parserTables
 
 #packetStaticSizes
 awk -v regex=$DYNAMIC_TYPE_REGEX \
@@ -57,7 +61,7 @@ BEGIN {
   printf "%s, ", size
 }
 END { print "0x00};" }
-' $1 >> $2
+' $configFile >> $parserTables
 
 #packetStaticCount
 awk -v regex=$DYNAMIC_TYPE_REGEX \
@@ -65,7 +69,7 @@ awk -v regex=$DYNAMIC_TYPE_REGEX \
 BEGIN{c=0; printf "const unsigned int packetStaticCount[] = {"}
 /^DEF/{for(i=4;i<=NF;i+=2) if(!($i ~ regex)){c+=1}; printf "%s, ", c; c=0}
 END {print "0x00};"}
-' $1 >> $2
+' $configFile >> $parserTables
 
 #packetDynamicCount
 awk -v regex=$DYNAMIC_TYPE_REGEX \
@@ -73,7 +77,7 @@ awk -v regex=$DYNAMIC_TYPE_REGEX \
 BEGIN{c=0; printf "const unsigned int packetDynamicCount[] = {"}
 /^DEF/{for(i=4;i<=NF;i+=2) if($i ~ regex){c+=1}; printf "%s, ", c; c=0}
 END {print "0x00};"}
-' $1 >> $2
+' $configFile >> $parserTables
 
 #packetStructSizes
 awk -v regex=$DYNAMIC_TYPE_REGEX \
@@ -81,12 +85,12 @@ awk -v regex=$DYNAMIC_TYPE_REGEX \
 BEGIN{c=0; printf "const size_t packetStructSizes[] = {"}
 /^DEF/{printf "sizeof(%s), ", $2}
 END {print "0x00};"}
-' $1 >> $2
+' $configFile >> $parserTables
 
 
 # packets.h
-echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $3
-echo "#include \"proto.h\"" >> $3
+echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $packetsh
+echo "#include \"proto.h\"" >> $packetsh
 
 # Ids
 awk -v regex="$DYNAMIC_TYPE_REGEX" \
@@ -97,7 +101,7 @@ BEGIN{print "enum {"; packet_id = 0;}
   packet_id+=1;
 }
 END{print "};"}
-' $1 >> $3
+' $configFile >> $packetsh
 # Structs
 awk -v regex="$DYNAMIC_TYPE_REGEX" \
 '
@@ -107,10 +111,10 @@ for(i=3;i<NF;i+=2) if(!($(i + 1) ~ regex)){ printf "\t%s %s;\n", $(i + 1), $i }
 for(i=3;i<NF;i+=2) if(($(i + 1) ~ regex)){ printf "\t%s %s;\n", $(i + 1), $i }
 printf "} %s;\n", $2
 }
-' $1 >> $3
+' $configFile >> $packetsh
 
 # Config
-echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $4
+echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $configh
 awk \
 '
 /^CONFIG/{
@@ -121,4 +125,5 @@ awk \
     else printf "\n#error Unknown config option %s\n", $2
   }
 }
-' $1 >> $4
+' $configFile >> $configh
+
