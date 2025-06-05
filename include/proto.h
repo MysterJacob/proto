@@ -21,6 +21,7 @@ typedef enum {
   TYPE_VARUINT = 11,
   TYPE_STRING = 12
 } datatype;
+
 #define INT8 int8_t
 #define INT16 int16_t
 #define INT32 int32_t
@@ -50,8 +51,6 @@ typedef volatile struct __attribute((packed)) {
   uint32_t seqNumber;
   uint32_t ackNumber;
 } PacketHeader;
-
-extern const datatype* const parserTable[];
 
 void processByte(const byte data);
 

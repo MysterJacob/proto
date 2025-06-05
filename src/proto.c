@@ -10,6 +10,8 @@
 #include "parserTables.h"
 #include "sanity.h"
 
+extern const datatype* const parserTable[];
+
 const size_t MagicSize = MAGIC_SIZE;
 const size_t PacketHeaderLength = PACKET_HEADER_LENGTH;
 const byte *MagicBytes = (byte *)MAGIC_BYTES;
