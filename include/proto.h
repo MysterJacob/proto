@@ -35,6 +35,7 @@ typedef enum {
 #define STRING char*
 
 typedef enum {
+  PERR_NOERR = 0,
   PERR_MALLOC_FAILED = 1,
   PERR_BUFFER_OVERFLOW = 2,
   PERR_UNKNOWN_ID = 3,

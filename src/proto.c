@@ -128,11 +128,11 @@ void finishRecieiving()
 #endif
 
 #ifndef DISABLE_ACK_SEQ_CHECK
-  if(parsedHeaderData.header.seqNumber != totalPacketsReceived) {
+  if(prsHdrData.header.seqNumber != totalPacketsReceived) {
     reportError(PERR_SEQ_MISMATCH);
     return;
   }
-  if(parsedHeaderData.header.ackNumber != totalPacketsSent) {
+  if(prsHdrData.header.ackNumber != totalPacketsSent) {
     reportError(PERR_ACK_MISMATCH);
     return;
   }
@@ -152,7 +152,6 @@ void finishHeaderParsing()
     return;
   }
   pktRqStrcSize = packetStructSizes[prsPktId];
-
 
   if(pktRqStrcSize == 0) {
     finishRecieiving();
@@ -636,5 +635,7 @@ void resetParsing()
 
 int getLastErrorCode()
 {
-  return lstErrCode;
+  errorCode cpy = lstErrCode;
+//   lstErrCode = PERR_NOERR;
+  return cpy;
 }
