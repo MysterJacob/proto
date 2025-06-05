@@ -29,8 +29,7 @@ class ErrorCode(IntEnum):
     PERR_LENGTH_MISMATCH = 4
     PERR_ACK_MISMATCH = 5
     PERR_SEQ_MISMATCH = 6
-    PERR_DATA_CRC_MISMATCH = 7,
-    PERR_HDR_CRC_MISMATCH = 8
+    PERR_CRC_MISMATCH = 7
 
 
 class PacketHeader(Structure):
@@ -64,7 +63,31 @@ ctype = {
 }
 
 # CREATOR INSERT PACKETS
-packets=[Packet]
+class TestPacket0(Packet):
+   _id=0
+   _fields_=[]
+class TestPacket1(Packet):
+   _id=1
+   _fields_=[("sample8", ctype["INT8"]),("sample16", ctype["INT16"]),("sample32", ctype["INT32"]),]
+class TestPacket2(Packet):
+   _id=2
+   _fields_=[("sampleu8", ctype["UINT8"]),("sample16", ctype["INT16"]),("sampleU32", ctype["UINT32"]),("sample32", ctype["INT32"]),]
+class TestPacket3(Packet):
+   _id=3
+   _fields_=[("test1", ctype["UINT8"]),("message", ctype["STRING"]),("test2", ctype["UINT8"]),]
+class TestPacket4(Packet):
+   _id=4
+   _fields_=[("test1", ctype["UINT8"]),("varuint", ctype["VARUINT"]),("test2", ctype["UINT8"]),]
+class TestPacket5(Packet):
+   _id=5
+   _fields_=[("test1", ctype["UINT8"]),("varint", ctype["VARINT"]),("test2", ctype["UINT8"]),]
+class MultipleDynamicPacket(Packet):
+   _id=6
+   _fields_=[("s", ctype["STRING"]),("vu", ctype["VARUINT"]),("vi", ctype["VARINT"]),]
+class MemoryTestPacket(Packet):
+   _id=7
+   _fields_=[("t1", ctype["STRING"]),("t2", ctype["STRING"]),]
+packets=[TestPacket0, TestPacket1, TestPacket2, TestPacket3, TestPacket4, TestPacket5, MultipleDynamicPacket, MemoryTestPacket, ]
 # CREATOR INSERT PACKETS
 
 

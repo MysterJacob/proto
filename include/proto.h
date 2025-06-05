@@ -42,15 +42,17 @@ typedef enum {
   PERR_LENGTH_MISMATCH = 4,
   PERR_ACK_MISMATCH = 5,
   PERR_SEQ_MISMATCH = 6,
-  PERR_CRC_MISMATCH = 7
+  PERR_DATA_CRC_MISMATCH = 7,
+  PERR_HDR_CRC_MISMATCH = 8
 } errorCode;
 
 typedef volatile struct __attribute((packed)) {
-  uint16_t checksum;
+  uint16_t headerChecksum;
   uint32_t length;
   uint32_t id;
   uint32_t seqNumber;
   uint32_t ackNumber;
+  uint16_t dataChecksum;
 } PacketHeader;
 
 void processByte(const byte data);

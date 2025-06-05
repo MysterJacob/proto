@@ -16,7 +16,14 @@ void TestErrorDetection(CuTest *tc)
   srand(0);
   resetParsing();
 
-  char *message = "The quick brown fox jumps over the lazy dog";
+  char *message =
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod "
+      "tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim "
+      "veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea "
+      "commodo consequat. Duis aute irure dolor in reprehenderit in voluptate "
+      "velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint "
+      "occaecat cupidatat non proident, sunt in culpa qui officia deserunt "
+      "mollit anim id est laborum.";
   TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
   size_t size;
 
@@ -33,15 +40,16 @@ void TestErrorDetection(CuTest *tc)
     processByte(0x00);
     processByte(0x00);
 
+    const int v = rand() % 15;
     for(int j = 0; j < size; j++) {
       byte noise = 0x00;
-      if(rand() % 10 == 0) noise = rand() % 0xFF;
+      if((j + v) % 15 == 0 && j > MAGIC_SIZE) noise = rand() % 0xFE + 1;
       processByte(data[j] ^ noise);
     }
 
     const int errCode = getLastErrorCode();
-    CuAssertTrue(tc, errCode != 0);
     CuAssertTrue(tc, isNewPacketReady() == 0);
+    CuAssertTrue(tc, errCode != 0);
 
     free(data);
   }
@@ -67,6 +75,7 @@ void TestPacketInJunk(CuTest *tc)
       processByte(r);
     }
 
+    //     printf("%d ", i);
     for(int j = 0; j < size; j++) {
       processByte(data[j]);
     }

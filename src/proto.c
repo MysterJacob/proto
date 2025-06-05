@@ -1,6 +1,7 @@
 #include "proto.h"
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,9 @@
 #include "crc.h"
 #include "parserTables.h"
 #include "sanity.h"
+
+#define CRC_INIT 0x7AB3
+#define CRC_XOR 0x1201
 
 extern const datatype *const parserTable[];
 
@@ -24,7 +28,7 @@ static union {
 void *prsPktData;
 byte *pktWriter;
 
-const size_t CrcSize = sizeof(prsHdrData.header.checksum);
+const size_t CrcSize = sizeof(prsHdrData.header.headerChecksum);
 
 byte newPktRdy = 0;
 PacketHandler pktPrsCallback = NULL;
@@ -42,7 +46,7 @@ size_t prsPktLen = 0;
 
 size_t prsHdrSize = 0;
 
-uint16_t prsPktCrc = 0x0000;
+uint16_t prsPktCrc = CRC_INIT;
 uint32_t prsPktId = 0;
 
 const errorCode reportError(const errorCode code)
@@ -74,7 +78,6 @@ void dealocateLastPacket()
   prsPktLen = 0;
   prsHdrSize = 0;
   pktStrcSize = 0;
-  pktStrcSize = 0;
   pktRqStrcSize = 0;
 
   prsPktData = 0;
@@ -99,7 +102,6 @@ void parseHeaderData(const byte data)
 
 enum {
   PSTATUS_DETECT = 0,
-  PSTATUS_HEADER_NONCRC = 1,
   PSTATUS_HEADER = 2,
   PSTATUS_STATICDATA = 3,
   PSTATUS_DYNAMICDATA = 4,
@@ -109,20 +111,25 @@ void restartParsing()
 {
   parsingStatus = PSTATUS_DETECT;
   prsPktId = 0;
-  prsPktCrc = 0x0000;
+  prsPktCrc = CRC_INIT;
   prsDynField = 0;
+}
+
+uint16_t getDynamicCrc()
+{
+  return prsPktCrc ^ CRC_XOR;
 }
 
 void finishRecieiving()
 {
-  if(prsPktLen != prsHdrData.header.length) {
+  if(prsPktLen != prsHdrData.header.length || pktStrcSize != pktRqStrcSize) {
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
 
 #ifndef DISABLE_CRC_CHECK
-  if(prsPktCrc != prsHdrData.header.checksum) {
-    reportError(PERR_CRC_MISMATCH);
+  if(getDynamicCrc() != prsHdrData.header.dataChecksum) {
+    reportError(PERR_DATA_CRC_MISMATCH);
     return;
   }
 #endif
@@ -144,8 +151,28 @@ void finishRecieiving()
   if(pktPrsCallback != NULL) pktPrsCallback(prsHdrData.header, prsPktData);
 }
 
+static uint16_t calculateCrc(byte *buffer, size_t size)
+{
+  uint16_t crc = CRC_INIT;
+  while(size--) {
+    crc = (crc >> 8) ^ crc16_table[(crc ^ *buffer++) & 0xff];
+  }
+  return crc ^ CRC_XOR;
+}
+
 void finishHeaderParsing()
 {
+  const uint16_t prsHdrCrc = prsHdrData.header.headerChecksum;
+  prsHdrData.header.headerChecksum = 0x0000;
+  const uint16_t calculatedHdrCrc =
+      calculateCrc(prsHdrData.data, sizeof(PacketHeader));
+  prsHdrData.header.headerChecksum = prsHdrCrc;
+
+  if(calculatedHdrCrc != prsHdrCrc) {
+    reportError(PERR_HDR_CRC_MISMATCH);
+    return;
+  }
+
   prsPktId = prsHdrData.header.id;
   if(prsPktId >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
@@ -178,22 +205,23 @@ void finishStaticDataParsing()
   }
 }
 
+struct {
+  VARUINT buffer;
+  size_t size;
+} vuinPrsData = {0, 0};
 const size_t getVaruint(const byte data, VARUINT *out)
 {
-  static VARUINT buffer = 0;
-  static size_t size;
-
   const VARUINT value = data & 0x7F;
   const int marker = data & 0x80;
 
-  buffer |= value << size;
-  size += 7;
+  vuinPrsData.buffer |= value << vuinPrsData.size;
+  vuinPrsData.size += 7;
 
   if(marker == 0) {
-    *out = buffer;
-    buffer = 0;
-    const size_t ret = size;
-    size = 0;
+    *out = vuinPrsData.buffer;
+    vuinPrsData.buffer = 0;
+    const size_t ret = vuinPrsData.size;
+    vuinPrsData.size = 0;
     return ret;
   }
 
@@ -218,80 +246,99 @@ const size_t parseVaruint(const byte data)
   return size;
 }
 
+struct {
+  VARINT buffer;
+  int lastMarkerBit;
+  size_t size;
+} vinPrsData = {0, 1, 0};
 const size_t parseVarint(const byte data)
 {
-  static VARINT buffer = 0;
-  static int lastMarkerBit = 1;
-  static size_t size;
-
   const int valueBits = data & 0x7F;
   const int markerBit = (data & 0x80) >> 7;
 
-  buffer |= valueBits << size;
-  size += 7;
+  vinPrsData.buffer |= valueBits << vinPrsData.size;
+  vinPrsData.size += 7;
 
-  if(lastMarkerBit == 1) {
-    lastMarkerBit = markerBit;
+  if(vinPrsData.lastMarkerBit == 1) {
+    vinPrsData.lastMarkerBit = markerBit;
     return 0;
   }
 
   if(markerBit == 1) {
-    buffer *= -1;
+    vinPrsData.buffer *= -1;
   }
 
   int i = 0;
   do {
-    parsePacketData(buffer & 0xFF);
-    buffer >>= 8;
+    parsePacketData(vinPrsData.buffer & 0xFF);
+    vinPrsData.buffer >>= 8;
     i += 1;
   } while(i < sizeof(VARINT));
 
-  const size_t ret = size;
-  size = 0;
-  buffer = 0;
-  lastMarkerBit = 1;
+  const size_t ret = vinPrsData.size;
+  vinPrsData.size = 0;
+  vinPrsData.buffer = 0;
+  vinPrsData.lastMarkerBit = 1;
 
   return ret;
 }
 
+struct {
+  VARUINT stringLength;
+  size_t parsedStringSize;
+  char *string;
+} strPrsData = {0, 0, 0};
 const size_t parseString(const byte data)
 {
-  static VARUINT stringLength = 0;
-  static size_t parsedStringSize = 0;
-  static char *string = 0;
-
-  if(stringLength == 0) {
-    getVaruint(data, &stringLength);
-    if(stringLength == 0) {
+  if(strPrsData.stringLength == 0) {
+    getVaruint(data, &strPrsData.stringLength);
+    if(strPrsData.stringLength == 0) {
       return 0;
     }
 
-    string = malloc(sizeof(char) * stringLength);
-    if(string == 0) {
+    strPrsData.string = malloc(sizeof(char) * strPrsData.stringLength);
+    if(strPrsData.string == 0) {
       reportError(PERR_MALLOC_FAILED);
     }
 
     return 0;
   }
 
-  string[parsedStringSize++] = data;
+  strPrsData.string[strPrsData.parsedStringSize++] = data;
 
-  if(stringLength != parsedStringSize) {
+  if(strPrsData.stringLength != strPrsData.parsedStringSize) {
     return 0;
   }
 
   // Heresy
-  long long straddr = (long long)string;
+  long long straddr = (long long)strPrsData.string;
   for(int i = 0; i < sizeof(char *); i++) {
     parsePacketData(straddr & 0xFF);
     straddr >>= 8;
   }
 
-  const size_t ret = stringLength;
+  const size_t ret = strPrsData.stringLength;
 
-  stringLength = 0;
-  parsedStringSize = 0;
+  strPrsData.stringLength = 0;
+  strPrsData.parsedStringSize = 0;
   return ret;
+}
+
+void resetDynamicParsers()
+{
+  strPrsData.parsedStringSize = 0;
+  if(strPrsData.string != 0 &&
+     strPrsData.parsedStringSize != strPrsData.stringLength)
+    free(strPrsData.string);
+  strPrsData.string = 0;
+  strPrsData.stringLength = 0;
+
+  vinPrsData.buffer = 0;
+  vinPrsData.lastMarkerBit = 1;
+  vinPrsData.size = 0;
+
+  vuinPrsData.buffer = 0;
+  vuinPrsData.size = 0;
 }
 
 void processDynamicData(const byte data)
@@ -340,20 +387,12 @@ void processByte(const byte data)
       if(magicPointer >= MagicSize) {
         dealocateLastPacket();
         magicPointer = 0;
-        parsingStatus = PSTATUS_HEADER_NONCRC;
-      }
-
-      break;
-    case PSTATUS_HEADER_NONCRC:
-      parseHeaderData(data);
-      if(prsHdrSize == CrcSize) {
         parsingStatus = PSTATUS_HEADER;
       }
 
       break;
     case PSTATUS_HEADER:
       parseHeaderData(data);
-      calculateDynamicCrc(data);
       if(prsHdrSize == sizeof(PacketHeader)) {
         finishHeaderParsing();
       }
@@ -376,7 +415,7 @@ void processByte(const byte data)
 
       if(lstErrCode) return;
       prsPktLen++;
-      if(*prsDynField == 0x0) {
+      if(*prsDynField == 0x0 || prsPktLen >= prsHdrData.header.length) {
         finishRecieiving();
       }
 
@@ -523,21 +562,12 @@ void generateDynamicData(const uint32_t id, const void *data,
   }
 }
 
-uint16_t calculateStaticCrc(byte *buffer, size_t size)
-{
-  uint16_t crc = 0x0000;
-  while(size--) {
-    crc = (crc >> 8) ^ crc16_table[(crc ^ *buffer++) & 0xff];
-  }
-  return crc;
-}
-
-void packetInsertCrc(byte *data, size_t size)
-{
-  const size_t offset = MagicSize + CrcSize;
-  uint16_t crc = calculateStaticCrc(data + offset, size - offset);
-  memcpy(data + MagicSize, &crc, CrcSize);
-}
+// void packetInsertCrc(byte *data, size_t size)
+// {
+//   const size_t offset = MagicSize + CrcSize;
+//   uint16_t crc = calculateStaticCrc(data + offset, size - offset);
+//   memcpy(data + MagicSize, &crc, CrcSize);
+// }
 
 byte *generatePacket(const uint32_t id, const void *data, size_t *size)
 {
@@ -553,26 +583,30 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   byte *const genPktData = (byte *)malloc(pktSize * sizeof(byte));
 
   memcpy(genPktData, MagicBytes, MagicSize);
-  memcpy(genPktData + PacketHeaderLength, data, staticLength);
 
+  memcpy(genPktData + PacketHeaderLength, data, staticLength);
   if(packetDynamicCount[id] != 0) {
     generateDynamicData(id, data, staticLength, genPktData);
   }
 
-  const PacketHeader genHdr = {
-      .checksum = 0x0000,
+  const uint16_t dataCrc = calculateCrc(genPktData + PacketHeaderLength,
+                                        staticLength + dynamicLength);
+
+  PacketHeader genHdr = {
+      .headerChecksum = 0x0000,
       .length = staticLength + dynamicLength,
       .id = id,
       .seqNumber = totalPacketsSent,
       .ackNumber = totalPacketsReceived,
+      .dataChecksum = dataCrc,
   };
+
+  genHdr.headerChecksum = calculateCrc((void *)&genHdr, sizeof(PacketHeader));
 
   memcpy(genPktData + MagicSize, (void *)&genHdr, sizeof(PacketHeader));
 
-  packetInsertCrc(genPktData, pktSize);
-
   totalPacketsSent++;
-  *size = pktSize;
+  if(size != NULL) *size = pktSize;
   return genPktData;
 }
 
@@ -595,6 +629,7 @@ const uint32_t getPacket(PacketHeader *header, void *packetData)
   if(packetData != NULL) {
     memcpy(packetData, prsPktData, pktRqStrcSize);
   }
+  newPktRdy = 0;
   return prsHdrData.header.id;
 }
 
@@ -623,7 +658,9 @@ void resetParsing()
   prsDynField = 0;
   magicPointer = 0;
   pktRqStrcSize = 0;
-  prsPktCrc = 0x0000;
+  prsPktCrc = CRC_INIT;
+
+  resetDynamicParsers();
 
   if(newPktRdy) {
     dealocateLastPacket();
@@ -636,6 +673,6 @@ void resetParsing()
 int getLastErrorCode()
 {
   errorCode cpy = lstErrCode;
-//   lstErrCode = PERR_NOERR;
+  lstErrCode = PERR_NOERR;
   return cpy;
 }
