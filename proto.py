@@ -1,6 +1,18 @@
-from ctypes import CDLL, Structure, c_uint8, c_uint16, c_uint32
+from ctypes import (
+    CDLL,
+    Structure,
+    POINTER,
+    byref,
+    c_uint,
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    c_size_t,
+    c_void_p,
+    c_ubyte,
+    create_string_buffer,
+)
 from enum import IntEnum
-
 
 class ErrorCode(IntEnum):
     PERR_MALLOC_FAILED = 1
@@ -23,34 +35,58 @@ class PacketHeader(Structure):
     ]
 
 
-class Packet:
+class Packet(Structure):
+    _pack_ = 1
     pass
+
+# CREATOR INSERT PACKETS
+
+# CREATOR INSERT PACKETS
 
 
 class Proto:
     def __init__(self, libpath: str) -> None:
         self.__proto = CDLL(libpath)
 
-    def processByte(self):
-        pass
+        self.__proto.generatePacket.argtypes = [
+            c_uint,
+            c_void_p,
+            POINTER(c_size_t),
+        ]
+        self.__proto.generatePacket.restype = POINTER(c_ubyte)
 
-    def genereatePacket(self, id: int, data: Packet) -> bytes:
-        pass
+    # void processByte(const byte data);
+    def processByte(self, data):
+        return self.__proto.processByte(data)
 
+    # byte* generatePacket(const unsigned int id, const void* data, size_t* size);
+    def generatePacket(self, id: int, data: Packet) -> bytes:
+        return self.__proto.generatePacket(id, byref(data), None)
+
+    # int isNewPacketReady();
     def isNewPacketReady(self) -> bool:
-        pass
+        return self.__proto.isNewPacketReady() == 1
 
+    # const size_t getPacketLength();
     def getPacketLength(self) -> int:
-        pass
+        return self.__proto.getPacketLength()
 
+    # const uint32_t getPacket(PacketHeader* header, void* packetData);
     def getPacket(self) -> tuple[int, PacketHeader, Packet]:
-        pass
+        header = PacketHeader()
+        data = create_string_buffer(self.getPacketLength())
+        id = self.__proto.getPacket(byref(header), data)
 
+        return id, header, data
+
+    # void resetParsing();
     def resetParsing(self):
-        pass
+        self.__proto.resetParsing()
 
+    # void hardResetParser();
     def hardResetParser(self):
-        pass
+        self.__proto.hardresetParser()
 
+    # int getLastErrorCode();
     def getLastErrorCode(self) -> ErrorCode:
-        pass
+        return ErrorCode(self.__proto.getLastErrorCode())
