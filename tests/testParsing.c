@@ -8,7 +8,7 @@
 
 void TestStaticParsing(CuTest *tc)
 {
-  puts("Testing Static Parsing");
+  puts(tc->name);
   resetParsing();
   union {
     volatile struct {

@@ -9,7 +9,7 @@
 
 void TestDynamicVaruintParsing(CuTest *tc)
 {
-  puts("Testing Dynamic Varuint Parsing");
+  puts(tc->name);
   resetParsing();
   unsigned long long value = 0;
   for(int i = 0; i < 8 * sizeof(long long); i++) {
@@ -40,7 +40,7 @@ void TestDynamicVaruintParsing(CuTest *tc)
 
 void TestDynamicVarintParsing(CuTest *tc)
 {
-  puts("Testing Dynamic String Parsing");
+  puts(tc->name);
   resetParsing();
   int sign = 1;
   long long value = 0;
@@ -73,7 +73,7 @@ void TestDynamicVarintParsing(CuTest *tc)
 
 void TestDynamicStrParsing(CuTest *tc)
 {
-  puts("Testing Dynamic String Parsing");
+  puts(tc->name);
   resetParsing();
   char *message = "The quick brown fox jumps over the lazy dog";
   TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};

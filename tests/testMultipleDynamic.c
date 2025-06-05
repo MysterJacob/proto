@@ -9,7 +9,7 @@
 
 void TestMultipleDynamic(CuTest *tc)
 {
-  puts("Testing Multiple Dynamic Fields");
+  puts(tc->name);
   resetParsing();
   char *message = "The quick brown fox jumps over the lazy dog";
   MultipleDynamicPacket tp = {.s = message, .vu = 0x1001, .vi = 0x2556};

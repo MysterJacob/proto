@@ -8,7 +8,7 @@
 
 void TestDetectingSimpleHeader(CuTest *tc)
 {
-  puts("Testing Simple Header Detection");
+  puts(tc->name);
   hardResetParser();
   union {
     PacketHeader ph;
@@ -51,7 +51,7 @@ unsigned short calculateCrc(byte *buffer, size_t size)
 
 void TestDetectingMultipleHeaders(CuTest *tc)
 {
-  puts("Testing Multiple Header Detection");
+  puts(tc->name);
   resetParsing();
   union {
     PacketHeader ph;

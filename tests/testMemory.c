@@ -42,7 +42,7 @@ uint64_t loop()
 }
 void TestMemory(CuTest *tc)
 {
-  puts("Testing Memory Leaks");
+  puts(tc->name);
   resetParsing();
   struct mallinfo2 miStart = mallinfo2();
 

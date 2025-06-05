@@ -10,7 +10,7 @@
 #include "parserTables.h"
 #include "sanity.h"
 
-extern const datatype* const parserTable[];
+extern const datatype *const parserTable[];
 
 const size_t MagicSize = MAGIC_SIZE;
 const size_t PacketHeaderLength = PACKET_HEADER_LENGTH;
@@ -35,9 +35,13 @@ uint32_t totalPacketsSent = 0;
 uint32_t totalPacketsReceived = 0;
 
 const datatype *prsDynField = 0;
-size_t prsPktLength = 0;
-size_t prsPktSize = 0;
+size_t pktRqStrcSize = 0;
+size_t pktStrcSize = 0;
+
+size_t prsPktLen = 0;
+
 size_t prsHdrSize = 0;
+
 uint16_t prsPktCrc = 0x0000;
 uint32_t prsPktId = 0;
 
@@ -50,7 +54,7 @@ const errorCode reportError(const errorCode code)
 
 void allocateMemoryForPacketData()
 {
-  if(prsPktLength == 0) {
+  if(pktRqStrcSize == 0) {
     return;
   }
   prsPktData = malloc(packetStructSizes[prsPktId]);
@@ -66,23 +70,26 @@ void dealocateLastPacket()
 {
   newPktRdy = 0;
   free((void *)prsPktData);
-  prsPktSize = 0;
+
+  prsPktLen = 0;
   prsHdrSize = 0;
-  prsPktLength = 0;
+  pktStrcSize = 0;
+  pktStrcSize = 0;
+  pktRqStrcSize = 0;
+
   prsPktData = 0;
   for(int i = 0; i < sizeof(PacketHeader); i++) {
     prsHdrData.data[i] = 0x00;
   }
 }
 
-const errorCode parsePacketData(const byte data)
+void parsePacketData(const byte data)
 {
-  if(prsPktSize >= prsPktLength) {
-    return reportError(PERR_BUFFER_OVERFLOW);
+  if(pktStrcSize >= pktRqStrcSize) {
+    reportError(PERR_BUFFER_OVERFLOW);
   }
   *(pktWriter++) = data;
-  prsPktSize++;
-  return 0;
+  pktStrcSize++;
 }
 
 void parseHeaderData(const byte data)
@@ -108,7 +115,7 @@ void restartParsing()
 
 void finishRecieiving()
 {
-  if(prsPktSize != packetStructSizes[prsPktId]) {
+  if(prsPktLen != prsHdrData.header.length) {
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
@@ -140,14 +147,14 @@ void finishRecieiving()
 void finishHeaderParsing()
 {
   prsPktId = prsHdrData.header.id;
-  prsPktLength = packetStructSizes[prsPktId];
-
   if(prsPktId >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
     return;
   }
+  pktRqStrcSize = packetStructSizes[prsPktId];
 
-  if(prsPktLength == 0) {
+
+  if(pktRqStrcSize == 0) {
     finishRecieiving();
   } else {
     allocateMemoryForPacketData();
@@ -328,9 +335,6 @@ void incrementMagicPointer(byte data)
 }
 void processByte(const byte data)
 {
-  if(lstErrCode != 0) {
-    return;
-  }
   switch(parsingStatus) {
     case PSTATUS_DETECT:
       incrementMagicPointer(data);
@@ -358,10 +362,11 @@ void processByte(const byte data)
       break;
     case PSTATUS_STATICDATA:
       calculateDynamicCrc(data);
-      if(parsePacketData(data) != 0) {
-        return;
-      }
-      if(prsPktSize == packetStaticSizes[prsPktId]) {
+      parsePacketData(data);
+      if(lstErrCode) return;
+      prsPktLen++;
+
+      if(prsPktLen == packetStaticSizes[prsPktId]) {
         finishStaticDataParsing();
       }
 
@@ -369,6 +374,9 @@ void processByte(const byte data)
     case PSTATUS_DYNAMICDATA:
       calculateDynamicCrc(data);
       processDynamicData(data);
+
+      if(lstErrCode) return;
+      prsPktLen++;
       if(*prsDynField == 0x0) {
         finishRecieiving();
       }
@@ -586,7 +594,7 @@ const uint32_t getPacket(PacketHeader *header, void *packetData)
     *header = prsHdrData.header;
   }
   if(packetData != NULL) {
-    memcpy(packetData, prsPktData, prsPktSize);
+    memcpy(packetData, prsPktData, pktRqStrcSize);
   }
   return prsHdrData.header.id;
 }
@@ -610,16 +618,18 @@ void resetParsing()
   parsingStatus = PSTATUS_DETECT;
 
   prsPktId = 0;
-  prsPktLength = 0;
+  prsPktLen = 0;
   prsHdrSize = 0;
-  prsPktSize = 0;
-  prsPktCrc = 0x0000;
+  pktStrcSize = 0;
   prsDynField = 0;
   magicPointer = 0;
+  pktRqStrcSize = 0;
+  prsPktCrc = 0x0000;
 
   if(newPktRdy) {
     dealocateLastPacket();
   }
+
   newPktRdy = 0;
   prsPktData = 0;
 }
