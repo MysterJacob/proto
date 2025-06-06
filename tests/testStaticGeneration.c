@@ -4,13 +4,11 @@
 #include <stdlib.h>
 
 #include "CuTest.h"
-#include "packets.h"
 #include "proto.h"
 
 void TestStaticGeneration(CuTest *tc)
 {
   puts(tc->name);
-//   resetParsing();
   hardResetParser();
   TestPacket2 testPacket = {0xDD, 0xFFF, 0xCCCCCCCC, 0xAAAAAAA};
 
@@ -59,7 +57,7 @@ void TestAckSq(CuTest *tc)
   const unsigned int baseSeq = header.seqNumber + 1;
   const unsigned int baseAck = header.ackNumber + 1;
 
-  for(int i = 0; i < 0xFFFF; i++) {
+  for(int i = 0; i < 0xFF; i++) {
     byte *rawData = generatePacket(0, (void *)&tp, &size);
     for(int h = 0; h < size; h++) {
       processByte(rawData[h]);

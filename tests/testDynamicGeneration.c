@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "CuTest.h"
-#include "packets.h"
 #include "proto.h"
 
 void TestDynamicVaruintGeneration(CuTest *tc)

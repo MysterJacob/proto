@@ -1,8 +1,10 @@
 SHELL := bash
 
-CFLAGS = -Wall -O2
+CC ?= gcc
+LIB_CC ?= $(CC)
+
+CFLAGS = -Wall -Os
 DEBUGFLAGS = -Wall -g3
-CC = gcc
 
 INCLUDE_DIR = include/
 BIN_DIR = bin/
@@ -38,7 +40,7 @@ $(INCLUDE_DIR)parserTables.h: FORCE
 
 FORCE:
 $(TARGET): mkdir $(TARGET_HEADER) $(INCLUDE_DIR)parserTables.h 
-	$(CC) $(CFLAGS) \
+	$(LIB_CC) $(CFLAGS) \
 	-shared \
 	-fPIC \
 	-o $(BIN_DIR)obj/proto.so \
@@ -51,10 +53,14 @@ $(TARGET): mkdir $(TARGET_HEADER) $(INCLUDE_DIR)parserTables.h
 	-o $(BIN_DIR)obj/proto.o
 
 	ar rvs $(TARGET) $(BIN_DIR)obj/proto.o
+	cp $(BIN_DIR)obj/proto.so bin/lib/proto.so
 
 $(TARGET_HEADER):
 	cp $(INCLUDE_DIR)$(TARGET_NAME).h $(TARGET_HEADER)
-	cp $(INCLUDE_DIR)packets.h $(PACKETS_HEADER)
+# 	cp $(INCLUDE_DIR)packets.h $(PACKETS_HEADER)
+	sed -i -e '/#include \"config.h\"/{r include/config.h' -e 'd}' $(TARGET_HEADER)
+	sed -i -e '/#include \"datatypes.h\"/{r include/datatypes.h' -e 'd}' $(TARGET_HEADER)
+	sed -i -e '/#include \"packets.h\"/{r include/packets.h' -e 'd}' $(TARGET_HEADER)
 
 .PHONY:
 mktest: changecfg $(TARGET)

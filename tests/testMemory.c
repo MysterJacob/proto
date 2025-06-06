@@ -6,7 +6,6 @@
 #include <sys/resource.h>
 
 #include "CuTest.h"
-#include "packets.h"
 #include "proto.h"
 
 #define TEST_COUNT 0x2000

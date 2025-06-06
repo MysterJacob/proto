@@ -1,4 +1,7 @@
 #include "proto.h"
+#include "sanity.h"
+#include "parserTables.h"
+#include "crc.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -6,10 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
-#include "crc.h"
-#include "parserTables.h"
-#include "sanity.h"
 
 #define CRC_INIT 0x7AB3
 #define CRC_XOR 0x1201
@@ -20,7 +19,7 @@ const size_t MagicSize = MAGIC_SIZE;
 const size_t PacketHeaderLength = PACKET_HEADER_LENGTH;
 const byte *MagicBytes = (byte *)MAGIC_BYTES;
 
-static union {
+union {
   PacketHeader header;
   byte data[sizeof(PacketHeader)];
 } prsHdrData = {};
@@ -151,7 +150,7 @@ void finishRecieiving()
   if(pktPrsCallback != NULL) pktPrsCallback(prsHdrData.header, prsPktData);
 }
 
-static uint16_t calculateCrc(byte *buffer, size_t size)
+uint16_t calculateCrc(byte *buffer, size_t size)
 {
   uint16_t crc = CRC_INIT;
   while(size--) {
@@ -311,10 +310,13 @@ const size_t parseString(const byte data)
   }
 
   // Heresy
-  long long straddr = (long long)strPrsData.string;
+  union {
+    char *str;
+    byte data[sizeof(char *)];
+  } converter;
+  converter.str = strPrsData.string;
   for(int i = 0; i < sizeof(char *); i++) {
-    parsePacketData(straddr & 0xFF);
-    straddr >>= 8;
+    parsePacketData(converter.data[i]);
   }
 
   const size_t ret = strPrsData.stringLength;

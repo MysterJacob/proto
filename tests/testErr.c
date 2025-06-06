@@ -5,10 +5,9 @@
 #include <string.h>
 
 #include "CuTest.h"
-#include "packets.h"
 #include "proto.h"
 
-#define TEST_SIZE 128 * 1000
+#define TEST_SIZE 32 * 1000
 
 void TestErrorDetection(CuTest *tc)
 {

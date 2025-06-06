@@ -6,8 +6,14 @@ configh="$4"
 echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $parserTables
 
 # parserTables.h
-echo "#include \"proto.h\"" >> $parserTables
-echo "#include \"packets.h\"" >> $parserTables
+echo "
+#ifndef protoh
+#include <stdint.h>
+#include <stddef.h>
+#include \"datatypes.h\"
+#include \"packets.h\"
+#endif
+" >> $parserTables
 
 DYNAMIC_TYPE_REGEX="(VARUINT|VARINT|STRING)"
 
@@ -90,7 +96,13 @@ END {print "0x00};"}
 
 # packets.h
 echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $packetsh
-echo "#include \"proto.h\"" >> $packetsh
+echo "
+#ifndef protoh
+#include <stdint.h>
+#include <stddef.h>
+#include \"datatypes.h\"
+#endif
+" >> $packetsh
 
 # Ids
 awk -v regex="$DYNAMIC_TYPE_REGEX" \

@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "CuTest.h"
-#include "packets.h"
 #include "proto.h"
 
 void TestDynamicVaruintParsing(CuTest *tc)
