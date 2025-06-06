@@ -22,7 +22,7 @@ typedef enum {
   PERR_SEQ_MISMATCH = 6,
   PERR_DATA_CRC_MISMATCH = 7,
   PERR_HDR_CRC_MISMATCH = 8
-} errorCode;
+} protoErrorCode;
 
 typedef volatile struct __attribute((packed)) {
   uint16_t headerChecksum;
