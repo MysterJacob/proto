@@ -39,7 +39,7 @@ $(INCLUDE_DIR)parserTables.h: FORCE
 	./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
 FORCE:
-$(TARGET): mkdir $(TARGET_HEADER) $(INCLUDE_DIR)parserTables.h 
+$(TARGET): mkdir $(INCLUDE_DIR)parserTables.h $(TARGET_HEADER)
 	$(LIB_CC) $(CFLAGS) \
 	-shared \
 	-fPIC \
