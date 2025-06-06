@@ -32,7 +32,7 @@ const size_t CrcSize = sizeof(prsHdrData.header.headerChecksum);
 byte newPktRdy = 0;
 PacketHandler pktPrsCallback = NULL;
 
-errorCode lstErrCode = 0;
+protoErrorCode lstErrCode = 0;
 
 uint32_t totalPacketsSent = 0;
 uint32_t totalPacketsReceived = 0;
@@ -48,7 +48,7 @@ size_t prsHdrSize = 0;
 uint16_t prsPktCrc = CRC_INIT;
 uint32_t prsPktId = 0;
 
-const errorCode reportError(const errorCode code)
+const protoErrorCode reportError(const protoErrorCode code)
 {
   resetParsing();
   lstErrCode = code;
@@ -674,7 +674,7 @@ void resetParsing()
 
 int getLastErrorCode()
 {
-  errorCode cpy = lstErrCode;
+  protoErrorCode cpy = lstErrCode;
   lstErrCode = PERR_NOERR;
   return cpy;
 }
