@@ -1,7 +1,4 @@
 #include "proto.h"
-#include "sanity.h"
-#include "parserTables.h"
-#include "crc.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -9,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "crc.h"
+#include "parserTables.h"
+#include "sanity.h"
 
 #define CRC_INIT 0x7AB3
 #define CRC_XOR 0x1201
@@ -72,7 +72,7 @@ void allocateMemoryForPacketData()
 void dealocateLastPacket()
 {
   newPktRdy = 0;
-  free((void *)prsPktData);
+  if(prsPktData != 0) free((void *)prsPktData);
 
   prsPktLen = 0;
   prsHdrSize = 0;
