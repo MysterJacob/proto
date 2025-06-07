@@ -671,7 +671,12 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
 
   totalPacketsSent++;
   if(size != NULL) *size = pktSize;
+#ifdef MALLOC_ALLOCATOR
   return genPktData;
+#endif
+#ifdef BUFFER_ALLOCATOR
+  return &genPktData[0];
+#endif
 }
 
 int isNewPacketReady()
