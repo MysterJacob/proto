@@ -56,6 +56,7 @@ size_t prsHdrSize = 0;
 uint16_t prsPktCrc = CRC_INIT;
 uint32_t prsPktId = 0;
 
+uint16_t calculateCrc(byte *buffer, size_t size);
 const protoErrorCode reportError(const protoErrorCode code)
 {
   resetParsing();
@@ -179,7 +180,7 @@ void finishRecieiving()
   if(pktPrsCallback != NULL) pktPrsCallback(prsHdrData.header, prsPktData);
 }
 
-static inline uint16_t calculateCrc(byte *buffer, size_t size)
+inline uint16_t calculateCrc(byte *buffer, size_t size)
 {
   uint16_t crc = CRC_INIT;
   while(size--) {
