@@ -179,7 +179,7 @@ void finishRecieiving()
   if(pktPrsCallback != NULL) pktPrsCallback(prsHdrData.header, prsPktData);
 }
 
-uint16_t calculateCrc(byte *buffer, size_t size)
+static inline uint16_t calculateCrc(byte *buffer, size_t size)
 {
   uint16_t crc = CRC_INIT;
   while(size--) {
@@ -190,6 +190,7 @@ uint16_t calculateCrc(byte *buffer, size_t size)
 
 void finishHeaderParsing()
 {
+#ifndef DISABLE_CRC_CHECK
   const uint16_t prsHdrCrc = prsHdrData.header.headerChecksum;
   prsHdrData.header.headerChecksum = 0x0000;
   const uint16_t calculatedHdrCrc =
@@ -200,6 +201,7 @@ void finishHeaderParsing()
     reportError(PERR_HDR_CRC_MISMATCH);
     return;
   }
+#endif
 
   prsPktId = prsHdrData.header.id;
   if(prsPktId >= definedPacketCount) {
@@ -367,7 +369,7 @@ const size_t parseString(const byte data)
 
   const size_t ret = strPrsData.stringLength;
 #ifdef BUFFER_ALLOCATOR
-    strPrsData.stringBufferStart += ret;
+  strPrsData.stringBufferStart += ret;
 #endif
   strPrsData.stringLength = 0;
   strPrsData.parsedStringSize = 0;
@@ -454,7 +456,9 @@ void processByte(const byte data)
 
       break;
     case PSTATUS_STATICDATA:
+#ifndef DISABLE_CRC_CHECK
       calculateDynamicCrc(data);
+#endif
       parsePacketData(data);
       if(lstErrCode) return;
       prsPktLen++;
@@ -465,7 +469,9 @@ void processByte(const byte data)
 
       break;
     case PSTATUS_DYNAMICDATA:
+#ifndef DISABLE_CRC_CHECK
       calculateDynamicCrc(data);
+#endif
       processDynamicData(data);
 
       if(lstErrCode) return;
@@ -653,9 +659,13 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
     generateDynamicData(id, data, staticLength, genPktData);
   }
 
+#ifndef DISABLE_CRC_CHECK
   const uint16_t dataCrc = calculateCrc(genPktData + PacketHeaderLength,
                                         staticLength + dynamicLength);
-
+#endif
+#ifdef DISABLE_CRC_CHECK
+  const uint16_t dataCrc = 0x0000;
+#endif
   PacketHeader genHdr = {
       .headerChecksum = 0x0000,
       .length = staticLength + dynamicLength,
@@ -665,7 +675,9 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
       .dataChecksum = dataCrc,
   };
 
+#ifndef DISABLE_CRC_CHECK
   genHdr.headerChecksum = calculateCrc((void *)&genHdr, sizeof(PacketHeader));
+#endif
 
   memcpy(genPktData + MagicSize, (void *)&genHdr, sizeof(PacketHeader));
 
