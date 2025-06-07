@@ -50,7 +50,9 @@ void TestErrorDetection(CuTest *tc)
     CuAssertTrue(tc, isNewPacketReady() == 0);
     CuAssertTrue(tc, errCode != 0);
 
+#ifdef MALLOC_ALLOCATOR
     free(data);
+#endif
   }
 }
 
@@ -80,7 +82,7 @@ void TestPacketInJunk(CuTest *tc)
     }
 
     const int errCode = getLastErrorCode();
-    CuAssertTrue(tc, errCode == 0);
+    CuAssertIntEquals(tc, 0, errCode);
     CuAssertTrue(tc, isNewPacketReady() == 1);
 
     TestPacket3 received;
@@ -88,9 +90,10 @@ void TestPacketInJunk(CuTest *tc)
     getPacket(&header, (void *)&received);
 
     CuAssertIntEquals(tc, 0, strcmp(received.message, message));
-
+#ifdef MALLOC_ALLOCATOR
     free(data);
     free(received.message);
+#endif
   }
 }
 

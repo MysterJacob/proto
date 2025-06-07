@@ -28,10 +28,11 @@ uint64_t loop()
     MemoryTestPacket received;
     PacketHeader header;
     getPacket(&header, (void *)&received);
-
+#ifdef MALLOC_ALLOCATOR
     free(data);
     free(received.t1);
     free(received.t2);
+#endif
     struct mallinfo2 miEnd = mallinfo2();
 
     const uint32_t delta = miEnd.uordblks - miStart.uordblks;

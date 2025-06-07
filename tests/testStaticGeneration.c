@@ -30,14 +30,15 @@ void TestStaticGeneration(CuTest *tc)
   CuAssertIntEquals(tc, testPacket.sampleu8, received.sampleu8);
   CuAssertIntEquals(tc, testPacket.sample16, received.sample16);
   CuAssertIntEquals(tc, testPacket.sampleU32, received.sampleU32);
-
+#ifdef MALLOC_ALLOCATOR
   free((void *)rawData);
+#endif
 }
 
 void TestAckSq(CuTest *tc)
 {
   puts(tc->name);
-  resetParsing();
+  hardResetParser();
 
   TestPacket0 tp = {};
   size_t size;
@@ -71,6 +72,8 @@ void TestAckSq(CuTest *tc)
     CuAssertIntEquals(tc, i + baseSeq, header.seqNumber);
     CuAssertIntEquals(tc, i + baseAck, header.ackNumber);
 
+#ifdef MALLOC_ALLOCATOR
     free((void *)rawData);
+#endif
   }
 }

@@ -23,6 +23,7 @@ from enum import IntEnum
 
 
 class ErrorCode(IntEnum):
+    PERR_NOERR = 0
     PERR_MALLOC_FAILED = 1
     PERR_BUFFER_OVERFLOW = 2
     PERR_UNKNOWN_ID = 3
@@ -64,7 +65,7 @@ ctype = {
 }
 
 # CREATOR INSERT PACKETS
-packets=[Packet]
+packets = [Packet]
 # CREATOR INSERT PACKETS
 
 

@@ -24,7 +24,15 @@ union {
   byte data[sizeof(PacketHeader)];
 } prsHdrData = {};
 
+#ifdef MALLOC_ALLOCATOR
 void *prsPktData;
+#endif
+
+#ifdef BUFFER_ALLOCATOR
+byte prsPktData[BUFFER_SIZE];
+byte genPktData[BUFFER_SIZE];
+#endif
+
 byte *pktWriter;
 
 const size_t CrcSize = sizeof(prsHdrData.header.headerChecksum);
@@ -60,6 +68,8 @@ void allocateMemoryForPacketData()
   if(pktRqStrcSize == 0) {
     return;
   }
+
+#ifdef MALLOC_ALLOCATOR
   prsPktData = malloc(packetStructSizes[prsPktId]);
 
   if(prsPktData == 0) {
@@ -67,19 +77,31 @@ void allocateMemoryForPacketData()
     return;
   }
   pktWriter = (byte *)prsPktData;
+#endif
+#ifdef BUFFER_ALLOCATOR
+  for(int i = 0; i < BUFFER_SIZE; i++)
+    prsPktData[i] = 0;
+  pktWriter = &prsPktData[0];
+#endif
 }
 
 void dealocateLastPacket()
 {
   newPktRdy = 0;
+#ifdef MALLOC_ALLOCATOR
   if(prsPktData != 0) free((void *)prsPktData);
+  prsPktData = 0;
+#endif
+#ifdef BUFFER_ALLOCATOR
+  for(int i = 0; i < BUFFER_SIZE; i++)
+    prsPktData[i] = 0;
+#endif
 
   prsPktLen = 0;
   prsHdrSize = 0;
   pktStrcSize = 0;
   pktRqStrcSize = 0;
 
-  prsPktData = 0;
   for(int i = 0; i < sizeof(PacketHeader); i++) {
     prsHdrData.data[i] = 0x00;
   }
@@ -90,6 +112,11 @@ void parsePacketData(const byte data)
   if(pktStrcSize >= pktRqStrcSize) {
     reportError(PERR_BUFFER_OVERFLOW);
   }
+#ifdef BUFFER_ALLOCATOR
+  if(pktStrcSize >= BUFFER_SIZE) {
+    reportError(PERR_BUFFER_OVERFLOW);
+  }
+#endif
   *(pktWriter++) = data;
   pktStrcSize++;
 }
@@ -106,12 +133,14 @@ enum {
   PSTATUS_DYNAMICDATA = 4,
 } parsingStatus = PSTATUS_DETECT;
 
+void resetDynamicParsers();
 void restartParsing()
 {
   parsingStatus = PSTATUS_DETECT;
   prsPktId = 0;
   prsPktCrc = CRC_INIT;
   prsDynField = 0;
+  resetDynamicParsers();
 }
 
 uint16_t getDynamicCrc()
@@ -286,7 +315,11 @@ struct {
   VARUINT stringLength;
   size_t parsedStringSize;
   char *string;
-} strPrsData = {0, 0, 0};
+#ifdef BUFFER_ALLOCATOR
+  size_t stringBufferStart;
+  char stringBuffer[STRING_BUFFER_SIZE];
+#endif
+} strPrsData = {0, 0};
 const size_t parseString(const byte data)
 {
   if(strPrsData.stringLength == 0) {
@@ -294,20 +327,32 @@ const size_t parseString(const byte data)
     if(strPrsData.stringLength == 0) {
       return 0;
     }
-
+    strPrsData.stringLength++;  // Null terminator
+#ifdef MALLOC_ALLOCATOR
     strPrsData.string = malloc(sizeof(char) * strPrsData.stringLength);
     if(strPrsData.string == 0) {
       reportError(PERR_MALLOC_FAILED);
+      return 0;
     }
+#endif
+#ifdef BUFFER_ALLOCATOR
+    strPrsData.string = &strPrsData.stringBuffer[strPrsData.stringBufferStart];
+    if(strPrsData.stringBufferStart + strPrsData.stringLength >
+       STRING_BUFFER_SIZE) {
+      reportError(PERR_BUFFER_OVERFLOW);
+      return 0;
+    }
+#endif
 
     return 0;
   }
 
   strPrsData.string[strPrsData.parsedStringSize++] = data;
 
-  if(strPrsData.stringLength != strPrsData.parsedStringSize) {
+  if(strPrsData.stringLength - 1 != strPrsData.parsedStringSize) {
     return 0;
   }
+  strPrsData.string[strPrsData.parsedStringSize++] = 0x0;
 
   // Heresy
   union {
@@ -315,12 +360,15 @@ const size_t parseString(const byte data)
     byte data[sizeof(char *)];
   } converter;
   converter.str = strPrsData.string;
+
   for(int i = 0; i < sizeof(char *); i++) {
     parsePacketData(converter.data[i]);
   }
 
   const size_t ret = strPrsData.stringLength;
-
+#ifdef BUFFER_ALLOCATOR
+    strPrsData.stringBufferStart += ret;
+#endif
   strPrsData.stringLength = 0;
   strPrsData.parsedStringSize = 0;
   return ret;
@@ -329,10 +377,15 @@ const size_t parseString(const byte data)
 void resetDynamicParsers()
 {
   strPrsData.parsedStringSize = 0;
+#ifdef MALLOC_ALLOCATOR
   if(strPrsData.string != 0 &&
      strPrsData.parsedStringSize != strPrsData.stringLength)
     free(strPrsData.string);
   strPrsData.string = 0;
+#endif
+#ifdef BUFFER_ALLOCATOR
+  strPrsData.stringBufferStart = 0;
+#endif
   strPrsData.stringLength = 0;
 
   vinPrsData.buffer = 0;
@@ -581,8 +634,17 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   size_t staticLength = packetStaticSizes[id];
   size_t dynamicLength = calculateDynamicSize(id, data);
   size_t pktSize = staticLength + dynamicLength + PacketHeaderLength;
-
+#ifdef MALLOC_ALLOCATOR
   byte *const genPktData = (byte *)malloc(pktSize * sizeof(byte));
+#endif
+#ifdef BUFFER_ALLOCATOR
+  if(pktSize > BUFFER_SIZE) {
+    reportError(PERR_BUFFER_OVERFLOW);
+    return NULL;
+  }
+  for(int i = 0; i < pktSize + 1; i++)
+    genPktData[i] = 0x00;
+#endif
 
   memcpy(genPktData, MagicBytes, MagicSize);
 
@@ -669,7 +731,6 @@ void resetParsing()
   }
 
   newPktRdy = 0;
-  prsPktData = 0;
 }
 
 int getLastErrorCode()

@@ -1,5 +1,8 @@
 CONFIG DisableCrc no
 CONFIG DisableAckSeq yes
+CONFIG AllocatorType MALLOC
+CONFIG BufferSize 4096
+CONFIG StringBufferSize 2048
 
 DEF TestPacket0
 DEF TestPacket1 sample8 INT8 sample16 INT16 sample32 INT32

@@ -136,6 +136,17 @@ awk \
     else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
     else printf "\n#error Unknown config option %s\n", $2
   }
+  if($2 == "AllocatorType") {
+    printf "#define "
+    if(tolower($3) == "malloc") print "MALLOC_ALLOCATOR"
+    if(tolower($3) == "buffer") print "BUFFER_ALLOCATOR"
+  }
+  if($2 == "BufferSize") {
+    printf "#define BUFFER_SIZE %s\n", $3
+  }
+  if($2 == "StringBufferSize") {
+    printf "#define STRING_BUFFER_SIZE %s\n", $3
+  }
 }
 ' $configFile >> $configh
 
