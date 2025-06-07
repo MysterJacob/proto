@@ -35,10 +35,10 @@ mkdir:
 clean:
 	rm -rf $(BIN_DIR)
 
-$(INCLUDE_DIR)parserTables.h: FORCE
+.FORCE:
+$(INCLUDE_DIR)parserTables.h: .FORCE
 	./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
-FORCE:
 $(TARGET): mkdir $(INCLUDE_DIR)parserTables.h $(TARGET_HEADER)
 	$(LIB_CC) $(CFLAGS) \
 	-shared \
@@ -55,7 +55,8 @@ $(TARGET): mkdir $(INCLUDE_DIR)parserTables.h $(TARGET_HEADER)
 	ar rvs $(TARGET) $(BIN_DIR)obj/proto.o
 	cp $(BIN_DIR)obj/proto.so bin/lib/proto.so
 
-$(TARGET_HEADER):
+.FORCE:
+$(TARGET_HEADER): .FORCE
 	cp $(INCLUDE_DIR)$(TARGET_NAME).h $(TARGET_HEADER)
 # 	cp $(INCLUDE_DIR)packets.h $(PACKETS_HEADER)
 	sed -i -e '/#include \"config.h\"/{r include/config.h' -e 'd}' $(TARGET_HEADER)
