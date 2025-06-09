@@ -10,8 +10,8 @@
 #include "parserTables.h"
 #include "sanity.h"
 
-#define CRC_INIT 0x7AB3
-#define CRC_XOR 0x1201
+#define CRC_INIT 0xFFFF
+#define CRC_XOR 0x1211
 
 extern const datatype *const parserTable[];
 
@@ -193,7 +193,6 @@ uint16_t calculateCrc(byte *buffer, size_t size)
 
 void finishHeaderParsing()
 {
-#ifndef DISABLE_CRC_CHECK
   const uint16_t prsHdrCrc = prsHdrData.header.headerChecksum;
   prsHdrData.header.headerChecksum = 0x0000;
   const uint16_t calculatedHdrCrc =
@@ -204,7 +203,6 @@ void finishHeaderParsing()
     reportError(PERR_HDR_CRC_MISMATCH);
     return;
   }
-#endif
 
   prsPktId = prsHdrData.header.id;
   if(prsPktId >= definedPacketCount) {
@@ -666,21 +664,20 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   const uint16_t dataCrc = calculateCrc(genPktData + PacketHeaderLength,
                                         staticLength + dynamicLength);
 #endif
-#ifdef DISABLE_CRC_CHECK
-  const uint16_t dataCrc = 0x0000;
-#endif
   PacketHeader genHdr = {
       .headerChecksum = 0x0000,
       .length = staticLength + dynamicLength,
       .id = id,
+#ifndef DISABLE_ACK_SEQ_CHECK
       .seqNumber = totalPacketsSent,
       .ackNumber = totalPacketsReceived,
+#endif
+#ifndef DISABLE_CRC_CHECK
       .dataChecksum = dataCrc,
+#endif
   };
 
-#ifndef DISABLE_CRC_CHECK
   genHdr.headerChecksum = calculateCrc((void *)&genHdr, sizeof(PacketHeader));
-#endif
 
   memcpy(genPktData + MagicSize, (void *)&genHdr, sizeof(PacketHeader));
 

@@ -28,9 +28,13 @@ typedef volatile struct __attribute((packed)) {
   uint16_t headerChecksum;
   uint16_t length;
   uint8_t id;
+#ifndef DISABLE_ACK_SEQ_CHECK
   uint16_t seqNumber;
   uint16_t ackNumber;
+#endif
+#ifndef DISABLE_CRC_CHECK
   uint16_t dataChecksum;
+#endif
 } PacketHeader;
 
 void processByte(const byte data);
