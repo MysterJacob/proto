@@ -51,6 +51,7 @@ void TestErrorDetection(CuTest *tc)
 #endif
   }
   printf("Detected %d CRC collsions in %d tries\n", collisionCount, TEST_SIZE);
+  CuAssertTrue(tc, collisionCount <= TEST_SIZE / 8192);
 }
 
 void TestPacketInJunk(CuTest *tc)

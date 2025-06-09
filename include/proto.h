@@ -40,6 +40,7 @@ typedef volatile struct __attribute((packed)) {
 void processByte(const byte data);
 
 byte *generatePacket(const uint32_t id, const void *data, size_t *size);
+byte *getLastPacketData();
 
 int isNewPacketReady();
 const size_t getPacketLength();
@@ -47,6 +48,9 @@ const uint32_t getPacket(PacketHeader *header, void *packetData);
 
 typedef void (*PacketHandler)(const PacketHeader header, void *packetData);
 void setPacketCallback(PacketHandler handler);
+
+typedef void (*ErrorHandler)(const protoErrorCode errorCode);
+void setErrorCallback(ErrorHandler handler);
 
 void resetParsing();
 void hardResetParser();
