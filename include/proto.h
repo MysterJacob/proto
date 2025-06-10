@@ -12,18 +12,6 @@
 #define MAGIC_SIZE sizeof(MAGIC_BYTES) - 1
 #define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + MAGIC_SIZE)
 
-typedef enum {
-  PERR_NOERR = 0,
-  PERR_MALLOC_FAILED = 1,
-  PERR_BUFFER_OVERFLOW = 2,
-  PERR_UNKNOWN_ID = 3,
-  PERR_LENGTH_MISMATCH = 4,
-  PERR_ACK_MISMATCH = 5,
-  PERR_SEQ_MISMATCH = 6,
-  PERR_DATA_CRC_MISMATCH = 7,
-  PERR_HDR_CRC_MISMATCH = 8
-} protoErrorCode;
-
 typedef volatile struct __attribute((packed)) {
   uint16_t headerChecksum;
   uint16_t length;
@@ -36,6 +24,18 @@ typedef volatile struct __attribute((packed)) {
   uint16_t dataChecksum;
 #endif
 } PacketHeader;
+
+typedef enum {
+  PERR_NOERR = 0,
+  PERR_MALLOC_FAILED = 1,
+  PERR_BUFFER_OVERFLOW = 2,
+  PERR_UNKNOWN_ID = 3,
+  PERR_LENGTH_MISMATCH = 4,
+  PERR_ACK_MISMATCH = 5,
+  PERR_SEQ_MISMATCH = 6,
+  PERR_DATA_CRC_MISMATCH = 7,
+  PERR_HDR_CRC_MISMATCH = 8
+} protoErrorCode;
 
 void processByte(const byte data);
 
