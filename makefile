@@ -1,7 +1,7 @@
 SHELL := bash
 
 CC ?= gcc
-LIB_CC ?= $(CC)
+SO_CC ?= $(CC)
 
 CFLAGS = -Wall -Os
 DEBUGFLAGS = -Wall -g3
@@ -40,7 +40,7 @@ $(INCLUDE_DIR)parserTables.h: .FORCE
 	./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
 $(TARGET): mkdir $(INCLUDE_DIR)parserTables.h $(TARGET_HEADER)
-	$(LIB_CC) $(CFLAGS) \
+	$(SO_CC) $(CFLAGS) \
 	-shared \
 	-fPIC \
 	-o $(BIN_DIR)obj/proto.so \

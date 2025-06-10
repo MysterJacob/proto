@@ -153,4 +153,3 @@ echo "$parsedConfig" | awk \
   }
 }
 ' >> $configh
-
