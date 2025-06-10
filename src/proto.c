@@ -45,7 +45,7 @@ struct {
   byte data[BUFFER_SIZE];
 #endif
 #ifdef MALLOC_ALLOCATOR
-  void data;
+  void *data;
 #endif
 } pkt = {0, 0, 0, 0, 0, 0, 0};
 
@@ -351,8 +351,8 @@ const size_t parseString(const byte data)
     }
     strPrsData.len++;  // Null terminator
 #ifdef MALLOC_ALLOCATOR
-    strPrsData.string = malloc(sizeof(char) * strPrsData.stringLength);
-    if(strPrsData.string == 0) {
+    strPrsData.u.string = malloc(sizeof(char) * strPrsData.len);
+    if(strPrsData.u.string == 0) {
       reportError(PERR_MALLOC_FAILED);
       return 0;
     }
@@ -389,10 +389,9 @@ void resetDynamicParsers()
 {
   strPrsData.requiredLen = 0;
 #ifdef MALLOC_ALLOCATOR
-  if(strPrsData.string != 0 &&
-     strPrsData.parsedStringSize != strPrsData.stringLength)
-    free(strPrsData.string);
-  strPrsData.string = 0;
+  if(strPrsData.u.string != 0 && strPrsData.requiredLen != strPrsData.len)
+    free(strPrsData.u.string);
+  strPrsData.u.string = 0;
 #endif
 #ifdef BUFFER_ALLOCATOR
   strPrsData.stringBufferStart = 0;
@@ -647,7 +646,7 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   const size_t totalSize = datalength + header.totalLength;
 
 #ifdef MALLOC_ALLOCATOR
-  byte *const genPktData = (byte *)malloc(pktSize * sizeof(byte));
+  byte *const genPktData = (byte *)malloc(totalSize * sizeof(byte));
 #endif
 #ifdef BUFFER_ALLOCATOR
   if(totalSize > BUFFER_SIZE) {
@@ -691,7 +690,7 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
 }
 byte *getLastGeneratedPacket()
 {
-  return genPktData;
+  return pkt.data;
 }
 
 int isNewPacketReady()

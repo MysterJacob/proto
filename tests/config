@@ -1,6 +1,6 @@
 CONFIG DisableCrc no
 CONFIG DisableAckSeq yes
-CONFIG AllocatorType buffer
+CONFIG AllocatorType malloc
 CONFIG BufferSize 4096
 CONFIG StringBufferSize 2048
 
