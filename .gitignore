@@ -9,3 +9,4 @@ include/packets.h
 include/config.h
 .cache
 python/proto.py
+com.py
