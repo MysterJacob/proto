@@ -40,7 +40,7 @@ typedef volatile struct __attribute((packed)) {
 void processByte(const byte data);
 
 byte *generatePacket(const uint32_t id, const void *data, size_t *size);
-byte *getLastPacketData();
+byte *getLastGeneratedPacket();
 
 int isNewPacketReady();
 const size_t getPacketLength();

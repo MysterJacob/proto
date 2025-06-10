@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "crc.h"
+#include "datatypes.h"
 #include "parserTables.h"
 #include "sanity.h"
 
@@ -22,7 +23,7 @@ const size_t CrcSize = 2;
 protoErrorCode lstErrCode = 0;
 
 struct {
-  const size_t length;
+  const size_t totalLength;
   union {
     PacketHeader header;
     byte data[sizeof(PacketHeader)];
@@ -105,22 +106,40 @@ void dealocateLastPacket()
     header.u.data[i] = 0x00;
   }
 }
-
-void parsePacketData(const byte data)
+void writeBuffer(const byte *data, size_t size)
+{
+  if(pkt.currentSize + size > pkt.requiredSize) {
+    reportError(PERR_BUFFER_OVERFLOW);
+    return;
+  }
+#ifdef BUFFER_ALLOCATOR
+  if(pkt.currentSize + size > BUFFER_SIZE) {
+    reportError(PERR_BUFFER_OVERFLOW);
+    return;
+  }
+#endif
+  pkt.currentSize += size;
+  for(int i = 0; i < size; i++) {
+    *(pkt.writer++) = *data++;
+  }
+}
+void writeByte(const byte data)
 {
   if(pkt.currentSize >= pkt.requiredSize) {
     reportError(PERR_BUFFER_OVERFLOW);
+    return;
   }
 #ifdef BUFFER_ALLOCATOR
   if(pkt.currentSize >= BUFFER_SIZE) {
     reportError(PERR_BUFFER_OVERFLOW);
+    return;
   }
 #endif
   *(pkt.writer++) = data;
   pkt.currentSize++;
 }
 
-void parseHeaderData(const byte data)
+static inline void parseHeaderData(const byte data)
 {
   header.u.data[header.currentSize++] = data;
 }
@@ -208,6 +227,7 @@ void finishHeaderParsing()
     reportError(PERR_UNKNOWN_ID);
     return;
   }
+
   pkt.requiredSize = packetStructSizes[pkt.id];
 
   if(pkt.requiredSize == 0) {
@@ -236,20 +256,20 @@ void finishStaticDataParsing()
 }
 
 struct {
-  VARUINT buffer;
   size_t size;
+  VARUINT value;
 } vuinPrsData = {0, 0};
 const size_t getVaruint(const byte data, VARUINT *out)
 {
   const VARUINT value = data & 0x7F;
   const int marker = data & 0x80;
 
-  vuinPrsData.buffer |= value << vuinPrsData.size;
+  vuinPrsData.value |= value << vuinPrsData.size;
   vuinPrsData.size += 7;
 
   if(marker == 0) {
-    *out = vuinPrsData.buffer;
-    vuinPrsData.buffer = 0;
+    *out = vuinPrsData.value;
+    vuinPrsData.value = 0;
     const size_t ret = vuinPrsData.size;
     vuinPrsData.size = 0;
     return ret;
@@ -260,33 +280,35 @@ const size_t getVaruint(const byte data, VARUINT *out)
 
 const size_t parseVaruint(const byte data)
 {
-  VARUINT out;
-  size_t size = getVaruint(data, &out);
+  union {
+    VARUINT value;
+    byte buffer[sizeof(VARUINT)];
+  } u;
+  size_t size = getVaruint(data, &u.value);
+
   if(size == 0) {
     return 0;
   }
 
-  int i = 0;
-  do {
-    parsePacketData(out & 0xFF);
-    out >>= 8;
-    i += 1;
-  } while(i < sizeof(VARUINT));
+  writeBuffer(u.buffer, sizeof(VARUINT));
 
   return size;
 }
 
 struct {
-  VARINT buffer;
   int lastMarkerBit;
   size_t size;
-} vinPrsData = {0, 1, 0};
+  union {
+    VARINT value;
+    byte buffer[sizeof(VARINT)];
+  } u;
+} vinPrsData = {1, 0};
 const size_t parseVarint(const byte data)
 {
   const int valueBits = data & 0x7F;
   const int markerBit = (data & 0x80) >> 7;
 
-  vinPrsData.buffer |= valueBits << vinPrsData.size;
+  vinPrsData.u.value |= valueBits << vinPrsData.size;
   vinPrsData.size += 7;
 
   if(vinPrsData.lastMarkerBit == 1) {
@@ -295,19 +317,14 @@ const size_t parseVarint(const byte data)
   }
 
   if(markerBit == 1) {
-    vinPrsData.buffer *= -1;
+    vinPrsData.u.value *= -1 * markerBit;
   }
 
-  int i = 0;
-  do {
-    parsePacketData(vinPrsData.buffer & 0xFF);
-    vinPrsData.buffer >>= 8;
-    i += 1;
-  } while(i < sizeof(VARINT));
+  writeBuffer(vinPrsData.u.buffer, sizeof(VARINT));
 
   const size_t ret = vinPrsData.size;
   vinPrsData.size = 0;
-  vinPrsData.buffer = 0;
+  vinPrsData.u.value = 0;
   vinPrsData.lastMarkerBit = 1;
 
   return ret;
@@ -316,7 +333,10 @@ const size_t parseVarint(const byte data)
 struct {
   VARUINT len;
   size_t requiredLen;
-  char *string;
+  union {
+    char *string;
+    byte buffer[sizeof(char *)];
+  } u;
 #ifdef BUFFER_ALLOCATOR
   size_t stringBufferStart;
   char stringBuffer[STRING_BUFFER_SIZE];
@@ -338,34 +358,23 @@ const size_t parseString(const byte data)
     }
 #endif
 #ifdef BUFFER_ALLOCATOR
-    strPrsData.string = &strPrsData.stringBuffer[strPrsData.stringBufferStart];
-    if(strPrsData.stringBufferStart + strPrsData.len >
-       STRING_BUFFER_SIZE) {
+    strPrsData.u.string =
+        &strPrsData.stringBuffer[strPrsData.stringBufferStart];
+    if(strPrsData.stringBufferStart + strPrsData.len > STRING_BUFFER_SIZE) {
       reportError(PERR_BUFFER_OVERFLOW);
       return 0;
     }
 #endif
-
     return 0;
   }
 
-  strPrsData.string[strPrsData.requiredLen++] = data;
+  strPrsData.u.string[strPrsData.requiredLen++] = data;
 
   if(strPrsData.len - 1 != strPrsData.requiredLen) {
     return 0;
   }
-  strPrsData.string[strPrsData.requiredLen++] = 0x0;
-
-  // Heresy
-  union {
-    char *str;
-    byte data[sizeof(char *)];
-  } converter;
-  converter.str = strPrsData.string;
-
-  for(int i = 0; i < sizeof(char *); i++) {
-    parsePacketData(converter.data[i]);
-  }
+  strPrsData.u.string[strPrsData.requiredLen++] = 0x0;
+  writeBuffer(strPrsData.u.buffer, sizeof(char *));
 
   const size_t ret = strPrsData.len;
 #ifdef BUFFER_ALLOCATOR
@@ -390,11 +399,11 @@ void resetDynamicParsers()
 #endif
   strPrsData.len = 0;
 
-  vinPrsData.buffer = 0;
+  vinPrsData.u.value = 0;
   vinPrsData.lastMarkerBit = 1;
   vinPrsData.size = 0;
 
-  vuinPrsData.buffer = 0;
+  vuinPrsData.value = 0;
   vuinPrsData.size = 0;
 }
 
@@ -445,7 +454,6 @@ void processByte(const byte data)
         header.magicPointer = 0;
         parsingStatus = PSTATUS_HEADER;
       }
-
       break;
     case PSTATUS_HEADER:
       parseHeaderData(data);
@@ -458,7 +466,7 @@ void processByte(const byte data)
 #ifndef DISABLE_CRC_CHECK
       calculateDynamicCrc(data);
 #endif
-      parsePacketData(data);
+      writeByte(data);
       if(lstErrCode) return;
       pkt.currentLen++;
 
@@ -592,11 +600,11 @@ void generateDynamicData(const uint32_t id, const void *data,
                          const size_t staticLength, byte *genPktData)
 {
   const byte *pktDynData = data + staticLength;
-  byte *dynDataWriter = genPktData + header.length + staticLength;
-
+  byte *dynDataWriter = genPktData + header.totalLength + staticLength;
   const datatype *genDynFieldType = &parserTable[id][packetStaticCount[id]];
 
   size_t datasize = 0;
+
   for(int i = 0; i < packetDynamicCount[id]; i++) {
     switch(*genDynFieldType++) {
       case TYPE_VARUINT: {
@@ -636,7 +644,7 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   const size_t staticLength = packetStaticSizes[id];
   const size_t dynamicLength = calculateDynamicSize(id, data);
   const size_t datalength = staticLength + dynamicLength;
-  const size_t totalSize = datalength + header.length;
+  const size_t totalSize = datalength + header.totalLength;
 
 #ifdef MALLOC_ALLOCATOR
   byte *const genPktData = (byte *)malloc(pktSize * sizeof(byte));
@@ -651,7 +659,7 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
 #endif
 
   memcpy(genPktData, MagicBytes, MagicSize);
-  memcpy(genPktData + header.length, data, staticLength);
+  memcpy(genPktData + header.totalLength, data, staticLength);
   if(packetDynamicCount[id] != 0) {
     generateDynamicData(id, data, staticLength, genPktData);
   }
@@ -665,7 +673,7 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
       .ackNumber = totalPacketsReceived,
 #endif
 #ifndef DISABLE_CRC_CHECK
-      .dataChecksum = calculateCrc(genPktData + header.length, datalength),
+      .dataChecksum = calculateCrc(genPktData + header.totalLength, datalength),
 #endif
   };
 
@@ -681,7 +689,7 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   return &genPktData[0];
 #endif
 }
-byte *getLastPacketData()
+byte *getLastGeneratedPacket()
 {
   return genPktData;
 }
