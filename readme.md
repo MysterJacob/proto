@@ -118,3 +118,7 @@ Defined in include/datatypes.h
 - [x] ~Fix~ Multi endianness
 - [x] Readme documentation
 - [ ] Refactor makefile
+
+### Future
+- zlib compression
+- packet encryption
