@@ -115,7 +115,7 @@ class Proto:
 
     # void hardResetParser();
     def hardResetParser(self):
-        self.__proto.hardresetParser()
+        self.__proto.hardResetParser()
 
     # int getLastErrorCode();
     def getLastErrorCode(self) -> ErrorCode:
