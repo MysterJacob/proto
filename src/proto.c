@@ -11,6 +11,10 @@
 #include "parserTables.h"
 #include "sanity.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CRC_INIT 0xFFFF
 #define CRC_XOR 0x1211
 
@@ -763,3 +767,6 @@ int getLastErrorCode()
   lstErrCode = PERR_NOERR;
   return cpy;
 }
+#ifdef __cplusplus
+}
+#endif
