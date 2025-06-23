@@ -30,8 +30,10 @@ uint64_t loop()
     getPacket(&header, (void *)&received);
 #ifdef MALLOC_ALLOCATOR
     free(data);
-    free(received.t1);
-    free(received.t2);
+    if(getLastErrorCode() == PERR_NOERR) {
+      free(received.t1);
+      free(received.t2);
+    }
 #endif
     struct mallinfo2 miEnd = mallinfo2();
 

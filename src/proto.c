@@ -182,10 +182,10 @@ void finishRecieiving()
 #endif
 
 #ifndef DISABLE_ACK_SEQ_CHECK
-  if(prsHdrData.header.seqNumber != totalPacketsReceived) {
+  if(header.u.header.seqNumber != totalPacketsReceived) {
     reportError(PERR_SEQ_MISMATCH);
   }
-  if(prsHdrData.header.ackNumber != totalPacketsSent) {
+  if(header.u.header.ackNumber != totalPacketsSent) {
     reportError(PERR_ACK_MISMATCH);
   }
 #endif
