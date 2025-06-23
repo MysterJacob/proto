@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef protoh
 #define protoh
 #include <stddef.h>
@@ -56,4 +60,7 @@ void resetParsing();
 void hardResetParser();
 int getLastErrorCode();
 
+#endif
+#ifdef __cplusplus
+}
 #endif
