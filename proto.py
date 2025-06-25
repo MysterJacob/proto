@@ -98,10 +98,15 @@ class Proto:
     def getPacketLength(self) -> int:
         return self.__proto.getPacketLength()
 
+    # const size_t getPacketStructureSize();
+    def getPacketStructureSize(self) -> int:
+        return self.__proto.getPacketStructureSize()
+
+
     # const uint32_t getPacket(PacketHeader* header, void* packetData);
     def getPacket(self) -> tuple[int, PacketHeader, Packet]:
         header = PacketHeader()
-        data = create_string_buffer(self.getPacketLength())
+        data = create_string_buffer(self.getPacketStructureSize())
         id = self.__proto.getPacket(byref(header), data)
 
         packetType = packets[id]
