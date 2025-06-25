@@ -704,7 +704,14 @@ int isNewPacketReady()
 
 const size_t getPacketLength()
 {
+  if(!pkt.newReady) return 0;
   return header.u.header.length;
+}
+
+const size_t getPacketStructureSize()
+{
+  if(!pkt.newReady) return 0;
+  return packetStructSizes[header.u.header.id];
 }
 
 const uint32_t getPacket(PacketHeader *rheader, void *rpacketData)
