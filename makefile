@@ -3,98 +3,99 @@ SHELL := bash
 CC ?= gcc
 SO_CC ?= $(CC)
 
-CFLAGS = -Wall -Os
-DEBUGFLAGS = -Wall -g3
+COMPILE_FLAGS = -Wall -Os
+DEBUG_FLAGS = -Wall -g3
 
 INCLUDE_DIR = include/
-BIN_DIR = bin/
+BUILD_DIR = bin/
+LIB_DIR = $(BUILD_DIR)lib/
+OBJ_DIR = $(BUILD_DIR)obj/
 SRC_DIR = src/
+
+SOURCES = $(wildcard $(SRC_DIR)*.c)
+
 TESTS_DIR = tests/
 CUTEST_DIR = cutest-1.5/
 
+SO_FILE = $(LIB_DIR)proto.so
+AR_FILE = $(LIB_DIR)proto.ar
+TEST_FILE = $(BUILD_DIR)test/test.o
+TARGET_HEADER = $(LIB_DIR)proto.h
+PYTHON_FILE = $(LIB_DIR)proto.py
+
 CONFIG := config
-TARGET_NAME = proto
-TARGET = $(BIN_DIR)/lib/$(TARGET_NAME).ar
-TARGET_HEADER = $(BIN_DIR)/lib/$(TARGET_NAME).h
-PACKETS_HEADER = $(BIN_DIR)/lib/$(TARGET_NAME).h
 
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-TESTS = $(wildcard $(TESTS_DIR)*.c)
-OBJS = $(patsubst $(SRC_DIR)/%.c,$(BIN_DIR)obj/%.o,$(SRCS))
+default: headers $(SO_FILE)
+all: headers $(SO_FILE) $(AR_FILE) $(PYTHON_FILE)
 
-default: $(TARGET)
-
-.PHONY:
-mkdir:
-	mkdir -p $(BIN_DIR)
-	mkdir -p $(BIN_DIR)/lib/
-	mkdir -p $(BIN_DIR)/obj/
-	mkdir -p $(BIN_DIR)/test/
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)lib/
+	mkdir -p $(BUILD_DIR)obj/
+	mkdir -p $(BUILD_DIR)test/
 
 .PHONY:
-clean:
-	rm -rf $(BIN_DIR)
-
-.FORCE:
-$(INCLUDE_DIR)parserTables.h: .FORCE
+headers: $(BUILD_DIR) $(CONFIG)
 	./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
-$(TARGET): mkdir $(INCLUDE_DIR)parserTables.h $(TARGET_HEADER)
-	$(SO_CC) $(CFLAGS) \
-	-shared \
-	-fPIC \
-	-o $(BIN_DIR)obj/proto.so \
-	-I$(INCLUDE_DIR) $(SRCS)
+	cp $(INCLUDE_DIR)proto.h $(TARGET_HEADER)
 
-	$(CC) $(CFLAGS) \
-	-fPIC \
-	-I$(INCLUDE_DIR) \
-	-c $(SRCS) \
-	-o $(BIN_DIR)obj/proto.o
-
-	ar rvs $(TARGET) $(BIN_DIR)obj/proto.o
-	cp $(BIN_DIR)obj/proto.so bin/lib/proto.so
-
-.FORCE:
-$(TARGET_HEADER): .FORCE
-	cp $(INCLUDE_DIR)$(TARGET_NAME).h $(TARGET_HEADER)
-# 	cp $(INCLUDE_DIR)packets.h $(PACKETS_HEADER)
 	sed -i -e '/#include \"config.h\"/{r include/config.h' -e 'd}' $(TARGET_HEADER)
 	sed -i -e '/#include \"datatypes.h\"/{r include/datatypes.h' -e 'd}' $(TARGET_HEADER)
 	sed -i -e '/#include \"packets.h\"/{r include/packets.h' -e 'd}' $(TARGET_HEADER)
 
+$(SO_FILE): $(BUILD_DIR) headers $(SOURCES)
+	$(SO_CC) $(CFLAGS) \
+	-shared \
+	-fPIC \
+	-o $(SO_FILE) \
+	-I$(INCLUDE_DIR) $(SOURCES)
+
+$(AR_FILE): $(BUILD_DIR) headers $(SOURCES)
+	$(CC) $(CFLAGS) \
+	-fPIC \
+	-I$(INCLUDE_DIR) \
+	-c $(SOURCES) \
+	-o $(OBJ_DIR)proto.o
+
+	ar rvs $(AR_FILE) $(OBJ_DIR)proto.o
+
+$(PYTHON_FILE): $(BUILD_DIR) $(CONFIG)
+	./pythoncreator.sh config proto.py $(PYTHON_FILE)
+
 .PHONY:
-mktest: changecfg $(TARGET)
+clean:
+	rm -rf $(BUILD_DIR)
+
+TESTS = $(wildcard $(TESTS_DIR)*.c)
+$(TEST_FILE): headers $(CONFIG) $(SOURCES)
 	cp \
 	$(TESTS) \
 	$(CUTEST_DIR)CuTest.h \
 	$(CUTEST_DIR)make-tests.sh \
-	$(BIN_DIR)test
+	$(BUILD_DIR)test
 
-	chmod +x $(BIN_DIR)test/make-tests.sh
+	chmod +x $(BUILD_DIR)test/make-tests.sh
 	
-	(cd $(BIN_DIR)test ; rm AllTests.c ; ./make-tests.sh > AllTests.c)
+	(cd $(BUILD_DIR)test ; rm AllTests.c ; ./make-tests.sh > AllTests.c)
 
 	$(CC) $(DEBUGFLAGS) \
-	-o $(BIN_DIR)/test/test.o \
+	-o $(TEST_FILE) \
 	-I$(CUTEST_DIR) \
 	-I$(INCLUDE_DIR) \
 	-I$(TESTS_DIR) \
 	$(TESTS) \
 	$(CUTEST_DIR)CuTest.c \
-	$(BIN_DIR)test/AllTests.c \
-	$(OBJS)
+	$(BUILD_DIR)test/AllTests.c \
+	$(BUILD_DIR)obj/proto.o
 
-	chmod +x $(BIN_DIR)/test/test.o
-
-.PHONY:
-test: mktest
-	./$(BIN_DIR)/test/test.o
-
-debug: mktest
-	cp $(BIN_DIR)/test/test.o debug
+	chmod +x $(TEST_FILE) 
 
 .PHONY:
-changecfg:
+test: $(TEST_FILE)
+	./$(TEST_FILE)
+
+debug: $(TEST_FILE)
 	$(eval CONFIG := $(TESTS_DIR)config)
-	$(eval CFLAGS := $(DEBUGFLAGS))
+	$(eval COMPILE_FLAGS := $(DEBUG_FLAGS))
+	cp $(TEST_FILE) debug

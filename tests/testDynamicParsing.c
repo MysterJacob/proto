@@ -92,3 +92,28 @@ void TestDynamicStrParsing(CuTest *tc)
 
   CuAssertIntEquals(tc, 0, strcmp(received.message, message));
 }
+
+void TestEmptyString(CuTest *tc)
+{
+  puts(tc->name);
+  resetParsing();
+  char *message = "";
+  MultipleDynamicPacket tp = {message, 1234, 4312};
+  size_t size;
+  byte *data = generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
+
+  for(int i = 0; i < size; i++) {
+    processByte(*data++);
+  }
+
+  const int errCode = getLastErrorCode();
+  CuAssertIntEquals(tc, 0, errCode);
+  CuAssertTrue(tc, isNewPacketReady() != 0);
+  MultipleDynamicPacket received;
+  PacketHeader header;
+  getPacket(&header, (void *)&received);
+
+  CuAssertIntEquals(tc, 0, strcmp(received.s, message));
+  CuAssertIntEquals(tc, tp.vi, received.vi);
+  CuAssertIntEquals(tc, tp.vu, received.vu);
+}
