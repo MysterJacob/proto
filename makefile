@@ -68,7 +68,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 TESTS = $(wildcard $(TESTS_DIR)*.c)
-$(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES)
+$(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES) $(AR_FILE)
 	cp \
 	$(TESTS) \
 	$(CUTEST_DIR)CuTest.h \
@@ -79,7 +79,7 @@ $(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES)
 	
 	(cd $(BUILD_DIR)test ; rm AllTests.c ; ./make-tests.sh > AllTests.c)
 
-	$(CC) $(DEBUGFLAGS) \
+	$(CC) $(DEBUG_FLAGS) \
 	-o $(TEST_FILE) \
 	-I$(CUTEST_DIR) \
 	-I$(INCLUDE_DIR) \
@@ -100,5 +100,4 @@ test: testcfg $(TEST_FILE)
 	./$(TEST_FILE)
 
 debug: testcfg $(TEST_FILE)
-	$(eval COMPILE_FLAGS := $(DEBUG_FLAGS))
 	cp $(TEST_FILE) debug
