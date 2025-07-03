@@ -45,14 +45,14 @@ headers: $(BUILD_DIR)
 	sed -i -e '/#include \"packets.h\"/{r include/packets.h' -e 'd}' $(TARGET_HEADER)
 
 $(SO_FILE): $(BUILD_DIR) headers $(SOURCES)
-	$(SO_CC) $(CFLAGS) \
+	$(SO_CC) $(COMPILE_FLAGS) \
 	-shared \
 	-fPIC \
 	-o $(SO_FILE) \
 	-I$(INCLUDE_DIR) $(SOURCES)
 
 $(AR_FILE): $(BUILD_DIR) headers $(SOURCES)
-	$(CC) $(CFLAGS) \
+	$(CC) $(COMPILE_FLAGS) \
 	-fPIC \
 	-I$(INCLUDE_DIR) \
 	-c $(SOURCES) \
@@ -80,6 +80,7 @@ $(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES) $(AR_FILE)
 	(cd $(BUILD_DIR)test ; rm AllTests.c ; ./make-tests.sh > AllTests.c)
 
 	$(CC) $(DEBUG_FLAGS) \
+	$(SOURCES) \
 	-o $(TEST_FILE) \
 	-I$(CUTEST_DIR) \
 	-I$(INCLUDE_DIR) \
@@ -87,7 +88,6 @@ $(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES) $(AR_FILE)
 	$(TESTS) \
 	$(CUTEST_DIR)CuTest.c \
 	$(BUILD_DIR)test/AllTests.c \
-	$(BUILD_DIR)obj/proto.o
 
 	chmod +x $(TEST_FILE) 
 
