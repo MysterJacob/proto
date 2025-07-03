@@ -35,7 +35,7 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)test/
 
 .PHONY:
-headers: $(BUILD_DIR) $(CONFIG)
+headers: $(BUILD_DIR) 
 	./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
 	cp $(INCLUDE_DIR)proto.h $(TARGET_HEADER)
@@ -60,7 +60,7 @@ $(AR_FILE): $(BUILD_DIR) headers $(SOURCES)
 
 	ar rvs $(AR_FILE) $(OBJ_DIR)proto.o
 
-$(PYTHON_FILE): $(BUILD_DIR) $(CONFIG)
+$(PYTHON_FILE): $(BUILD_DIR)
 	./pythoncreator.sh config proto.py $(PYTHON_FILE)
 
 .PHONY:
@@ -68,7 +68,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 TESTS = $(wildcard $(TESTS_DIR)*.c)
-$(TEST_FILE): headers $(CONFIG) $(SOURCES)
+$(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES)
 	cp \
 	$(TESTS) \
 	$(CUTEST_DIR)CuTest.h \
@@ -92,10 +92,13 @@ $(TEST_FILE): headers $(CONFIG) $(SOURCES)
 	chmod +x $(TEST_FILE) 
 
 .PHONY:
-test: $(TEST_FILE)
+testcfg:
+	$(eval CONFIG := $(TESTS_DIR)config)
+
+.PHONY:
+test: testcfg $(TEST_FILE)
 	./$(TEST_FILE)
 
-debug: $(TEST_FILE)
-	$(eval CONFIG := $(TESTS_DIR)config)
+debug: testcfg $(TEST_FILE)
 	$(eval COMPILE_FLAGS := $(DEBUG_FLAGS))
 	cp $(TEST_FILE) debug
