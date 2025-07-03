@@ -335,8 +335,8 @@ const size_t parseVarint(const byte data)
 }
 
 struct {
-  VARUINT len;
-  size_t requiredLen;
+  VARUINT requiredLen;
+  size_t len;
   union {
     char *string;
     byte buffer[sizeof(char *)];
@@ -348,14 +348,14 @@ struct {
 } strPrsData = {0, 0};
 const size_t parseString(const byte data)
 {
-  if(strPrsData.len == 0) {
-    getVaruint(data, &strPrsData.len);
-    if(strPrsData.len == 0) {
+  if(strPrsData.requiredLen == 0) {
+    if(getVaruint(data, &strPrsData.requiredLen) == 0) {
+      //     if(strPrsData.requiredLen == 0) {
       return 0;
     }
-    strPrsData.len++;  // Null terminator
+    strPrsData.requiredLen++;  // Null terminator
 #ifdef MALLOC_ALLOCATOR
-    strPrsData.u.string = malloc(sizeof(char) * strPrsData.len);
+    strPrsData.u.string = malloc(sizeof(char) * strPrsData.requiredLen);
     if(strPrsData.u.string == 0) {
       reportError(PERR_MALLOC_FAILED);
       return 0;
@@ -369,38 +369,37 @@ const size_t parseString(const byte data)
       return 0;
     }
 #endif
-    return 0;
+  } else {
+    strPrsData.u.string[strPrsData.len++] = data;
   }
 
-  strPrsData.u.string[strPrsData.requiredLen++] = data;
-
-  if(strPrsData.len - 1 != strPrsData.requiredLen) {
+  if(strPrsData.requiredLen - 1 != strPrsData.len) {
     return 0;
   }
-  strPrsData.u.string[strPrsData.requiredLen++] = 0x0;
+  strPrsData.u.string[strPrsData.len++] = 0x0;
   writeBuffer(strPrsData.u.buffer, sizeof(char *));
 
-  const size_t ret = strPrsData.len;
+  const size_t ret = strPrsData.requiredLen;
 #ifdef BUFFER_ALLOCATOR
   strPrsData.stringBufferStart += ret;
 #endif
-  strPrsData.len = 0;
   strPrsData.requiredLen = 0;
+  strPrsData.len = 0;
   return ret;
 }
 
 void resetDynamicParsers()
 {
-  strPrsData.requiredLen = 0;
+  strPrsData.len = 0;
 #ifdef MALLOC_ALLOCATOR
-  if(strPrsData.u.string != 0 && strPrsData.requiredLen != strPrsData.len)
+  if(strPrsData.u.string != 0 && strPrsData.len != strPrsData.requiredLen)
     free(strPrsData.u.string);
   strPrsData.u.string = 0;
 #endif
 #ifdef BUFFER_ALLOCATOR
   strPrsData.stringBufferStart = 0;
 #endif
-  strPrsData.len = 0;
+  strPrsData.requiredLen = 0;
 
   vinPrsData.u.value = 0;
   vinPrsData.lastMarkerBit = 1;

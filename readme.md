@@ -117,7 +117,9 @@ Defined in include/datatypes.h
 - [x] CRC16
 - [x] ~Fix~ Multi endianness
 - [x] Readme documentation
+- [x] String of length 0 crashes
 - [ ] Refactor makefile
+- [ ] Memory safe test (freeing used memory)
 
 ### Future
 - zlib compression
