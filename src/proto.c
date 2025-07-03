@@ -213,6 +213,11 @@ uint16_t calculateCrc(byte *buffer, size_t size)
   return crc ^ CRC_XOR;
 }
 
+const datatype *getFirstDynamicField()
+{
+  return parserTable[pkt.id] + packetStaticCount[pkt.id];
+}
+
 void finishHeaderParsing()
 {
   const uint16_t prsHdrCrc = header.u.header.headerChecksum;
@@ -240,7 +245,7 @@ void finishHeaderParsing()
     allocateMemoryForPacketData();
 
     if(packetDynamicCount[pkt.id] != 0) {
-      pkt.dynamicFieldPointer = &parserTable[pkt.id][packetStaticSizes[pkt.id]];
+      pkt.dynamicFieldPointer = getFirstDynamicField();
     }
     if(packetStaticSizes[pkt.id] == 0) {
       parsingStatus = PSTATUS_DYNAMICDATA;
@@ -250,11 +255,12 @@ void finishHeaderParsing()
   }
 }
 
-void finishStaticDataParsing()
+void finishStaticParsing()
 {
   if(packetDynamicCount[pkt.id] == 0) {
     finishRecieiving();
   } else {
+    pkt.dynamicFieldPointer = getFirstDynamicField();
     parsingStatus = PSTATUS_DYNAMICDATA;
   }
 }
@@ -446,6 +452,7 @@ void incrementMagicPointer(byte data)
   else
     header.magicPointer = 0;
 }
+
 void processByte(const byte data)
 {
   switch(parsingStatus) {
@@ -473,7 +480,7 @@ void processByte(const byte data)
       pkt.currentLen++;
 
       if(pkt.currentLen == packetStaticSizes[pkt.id]) {
-        finishStaticDataParsing();
+        finishStaticParsing();
       }
 
       break;
