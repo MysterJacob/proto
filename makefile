@@ -60,7 +60,7 @@ $(AR_FILE): $(BUILD_DIR) headers $(SOURCES)
 
 	ar rvs $(AR_FILE) $(OBJ_DIR)proto.o
 
-$(PYTHON_FILE): $(BUILD_DIR)
+$(PYTHON_FILE): $(BUILD_DIR) $(CONFIG)
 	./pythoncreator.sh config proto.py $(PYTHON_FILE)
 
 .PHONY:
