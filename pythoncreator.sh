@@ -1,6 +1,9 @@
+#!/bin/bash
 configFile="$1"
 inputTemplate="$2"
 output="$3"
+
+DYNAMIC_TYPE_REGEX="(VARUINT|VARINT|STRING)"
 
 # proto.py
 pythonstructs=$(awk -v regex="$DYNAMIC_TYPE_REGEX" -v ind="   " \
