@@ -119,6 +119,7 @@ Defined in include/datatypes.h
 - [x] Readme documentation
 - [x] String of length 0 crashes
 - [x] Refactor makefile
+- [ ] Fix Ack/Seq numbers not working correctly
 - [ ] Memory safe test (freeing used memory)
 
 ### Future
