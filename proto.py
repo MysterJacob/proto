@@ -79,6 +79,7 @@ class Proto:
             POINTER(c_size_t),
         ]
         self.__proto.generatePacket.restype = POINTER(c_ubyte)
+        self.hardResetParser()
 
     # void processByte(const byte data);
     def processByte(self, data):
