@@ -8,7 +8,7 @@
 
 void TestStaticGeneration(CuTest *tc)
 {
-  puts(tc->name);
+  printf("%s.....", tc->name);
   hardResetParser();
   TestPacket2 testPacket = {0xDD, 0xFFF, 0xCCCCCCCC, 0xAAAAAAA};
 
@@ -33,4 +33,5 @@ void TestStaticGeneration(CuTest *tc)
 #ifdef MALLOC_ALLOCATOR
   free((void *)rawData);
 #endif
+puts("OK");
 }

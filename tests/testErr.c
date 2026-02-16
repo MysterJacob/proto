@@ -11,7 +11,7 @@
 
 void TestErrorDetection(CuTest *tc)
 {
-  puts(tc->name);
+  printf("%s.....", tc->name);
   srand(0);
   resetParsing();
 
@@ -26,7 +26,6 @@ void TestErrorDetection(CuTest *tc)
   TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
   size_t size;
 
-  puts("Error detection testing, please wait");
   int collisionCount = 0;
   for(int i = 0; i < TEST_SIZE; i++) {
     byte *data = generatePacket(3, (void *)&tp, &size);
@@ -50,13 +49,13 @@ void TestErrorDetection(CuTest *tc)
     free(data);
 #endif
   }
-  printf("Detected %d CRC collsions in %d tries\n", collisionCount, TEST_SIZE);
   CuAssertTrue(tc, collisionCount <= TEST_SIZE / 8192);
+  puts("OK");
 }
 
 void TestPacketInJunk(CuTest *tc)
 {
-  puts(tc->name);
+  printf("%s.....", tc->name);
   srand(rand());
   resetParsing();
 
@@ -64,7 +63,6 @@ void TestPacketInJunk(CuTest *tc)
   TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
   size_t size;
 
-  puts("Packet in noise detection, please wait");
   for(int i = 0; i < TEST_SIZE; i++) {
     byte *data = generatePacket(3, (void *)&tp, &size);
 
@@ -93,15 +91,15 @@ void TestPacketInJunk(CuTest *tc)
     free(received.message);
 #endif
   }
+  puts("OK");
 }
 
 void TestTotalNoise(CuTest *tc)
 {
-  puts(tc->name);
+  printf("%s.....", tc->name);
   srand(rand());
   resetParsing();
 
-  puts("Total noise immunity testing, please wait");
   for(int i = 0; i < TEST_SIZE; i++) {
     for(size_t i = 0; i < MAGIC_SIZE; i++) {
       processByte(MAGIC_BYTES[i]);
@@ -111,4 +109,5 @@ void TestTotalNoise(CuTest *tc)
       processByte(r);
     }
   }
+  puts("OK");
 }

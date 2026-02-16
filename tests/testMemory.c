@@ -44,7 +44,7 @@ uint64_t loop()
 }
 void TestMemory(CuTest *tc)
 {
-  puts(tc->name);
+  printf("%s.....", tc->name);
   resetParsing();
   struct mallinfo2 miStart = mallinfo2();
 
@@ -52,6 +52,7 @@ void TestMemory(CuTest *tc)
 
   struct mallinfo2 miEnd = mallinfo2();
   const uint64_t totalDelta = miEnd.uordblks - miStart.uordblks;
+  puts("OK");
   printf("Total heap start size: %lu bytes\n", miStart.uordblks);
   printf("Total heap end size: %lu bytes\n", miEnd.uordblks);
 

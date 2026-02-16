@@ -8,7 +8,7 @@
 
 void TestMultipleDynamic(CuTest *tc)
 {
-  puts(tc->name);
+  printf("%s.....", tc->name);
   resetParsing();
   char *message = "The quick brown fox jumps over the lazy dog";
   MultipleDynamicPacket tp = {.s = message, .vu = 0x1001, .vi = 0x2556};
@@ -29,4 +29,5 @@ void TestMultipleDynamic(CuTest *tc)
   CuAssertIntEquals(tc, 0, strcmp(received.s, message));
   CuAssertIntEquals(tc, 0x1001, received.vu);
   CuAssertIntEquals(tc, 0x2556, received.vi);
+  puts("OK");
 }
