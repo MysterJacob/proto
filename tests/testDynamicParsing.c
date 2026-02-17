@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <malloc.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,7 +9,7 @@
 
 void TestDynamicVaruintParsing(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   unsigned long long value = 0;
   for(int i = 0; i < 8 * sizeof(long long); i++) {
@@ -19,13 +20,13 @@ void TestDynamicVaruintParsing(CuTest *tc)
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
     for(int j = 0; j < size; j++) {
-      processByte(*data++);
+      processByte(*(data + j));
     }
     const int errCode = getLastErrorCode();
     CuAssertIntEquals(tc, 0, errCode);
 
     CuAssertTrue(tc, isNewPacketReady() != 0);
-    TestPacket4 received;
+    TestPacket4 received = {};
     PacketHeader header;
     getPacket(&header, (void *)&received);
 
@@ -34,13 +35,17 @@ void TestDynamicVaruintParsing(CuTest *tc)
 
     value <<= 1;
     value |= 1;
+#ifdef MALLOC_ALLOCATOR
+    free(data);
+#endif
   }
+
   puts("OK");
 }
 
 void TestDynamicVarintParsing(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   int sign = 1;
   long long value = 0;
@@ -52,12 +57,12 @@ void TestDynamicVarintParsing(CuTest *tc)
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
     for(int j = 0; j < size; j++) {
-      processByte(*data++);
+      processByte(*(data + j));
     }
     const int errCode = getLastErrorCode();
     CuAssertIntEquals(tc, 0, errCode);
     CuAssertTrue(tc, isNewPacketReady() != 0);
-    TestPacket5 received;
+    TestPacket5 received = {};
     PacketHeader header;
     getPacket(&header, (void *)&received);
     CuAssertIntEquals(tc, 0xFF - i, received.test1);
@@ -68,13 +73,16 @@ void TestDynamicVarintParsing(CuTest *tc)
       value <<= 1;
       value |= 1;
     }
+#ifdef MALLOC_ALLOCATOR
+    free(data);
+#endif
   }
   puts("OK");
 }
 
 void TestDynamicStrParsing(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   char *message = "The quick brown fox jumps over the lazy dog";
   TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
@@ -82,23 +90,28 @@ void TestDynamicStrParsing(CuTest *tc)
   byte *data = generatePacket(3, (void *)&tp, &size);
 
   for(int i = 0; i < size; i++) {
-    processByte(*data++);
+    processByte(*(data + i));
   }
 
   const int errCode = getLastErrorCode();
   CuAssertIntEquals(tc, 0, errCode);
   CuAssertTrue(tc, isNewPacketReady() != 0);
-  TestPacket3 received;
+  TestPacket3 received = {};
   PacketHeader header;
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.message, message));
+#ifdef MALLOC_ALLOCATOR
+  free(data);
+  free(received.message);
+#endif
+
   puts("OK");
 }
 
 void TestEmptyString(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   char *message = "";
   MultipleDynamicPacket tp = {message, 1234, 4312};
@@ -106,18 +119,23 @@ void TestEmptyString(CuTest *tc)
   byte *data = generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
 
   for(int i = 0; i < size; i++) {
-    processByte(*data++);
+    processByte(*(data + i));
   }
 
   const int errCode = getLastErrorCode();
   CuAssertIntEquals(tc, 0, errCode);
   CuAssertTrue(tc, isNewPacketReady() != 0);
-  MultipleDynamicPacket received;
+  MultipleDynamicPacket received = {};
   PacketHeader header;
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.s, message));
   CuAssertIntEquals(tc, tp.vi, received.vi);
   CuAssertIntEquals(tc, tp.vu, received.vu);
+#ifdef MALLOC_ALLOCATOR
+  free(data);
+  free(received.s);
+#endif
+
   puts("OK");
 }

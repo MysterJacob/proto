@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <malloc.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -7,7 +8,7 @@
 
 void TestDynamicVaruintGeneration(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   TestPacket4 tp = {
       .test1 = 0xEE, .varuint = 32 | (15 << 7) | (96 << 14), .test2 = 0xEE};
@@ -20,17 +21,19 @@ void TestDynamicVaruintGeneration(CuTest *tc)
   CuAssertIntEquals(tc, PACKET_HEADER_LENGTH + 5, size);
 
   int chk = 0x0;
-  data += PACKET_HEADER_LENGTH;
   for(int i = 0; i < size - PACKET_HEADER_LENGTH; i++) {
-    chk |= reference[i] ^ *(data++);
+    chk |= reference[i] ^ *(data + PACKET_HEADER_LENGTH + i);
   }
   CuAssertIntEquals(tc, 0, chk);
+#ifdef MALLOC_ALLOCATOR
+  free(data);
+#endif
   puts("OK");
 }
 
 void TestDynamicVarintGeneration(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   TestPacket5 tp = {.test1 = 0xEE, .varint = -35172, .test2 = 0xEE};
   size_t size;
@@ -41,17 +44,19 @@ void TestDynamicVarintGeneration(CuTest *tc)
   CuAssertIntEquals(tc, PACKET_HEADER_LENGTH + 5, size);
 
   int chk = 0x0;
-  data += PACKET_HEADER_LENGTH;
   for(int i = 0; i < size - PACKET_HEADER_LENGTH; i++) {
-    chk |= reference[i] ^ *(data++);
+    chk |= reference[i] ^ *(data + PACKET_HEADER_LENGTH + i);
   }
   CuAssertIntEquals(tc, 0, chk);
+#ifdef MALLOC_ALLOCATOR
+  free(data);
+#endif
   puts("OK");
 }
 
 void TestDynamicStrGeneration(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   char *message = "Hello world!";
   TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
@@ -64,10 +69,13 @@ void TestDynamicStrGeneration(CuTest *tc)
   CuAssertIntEquals(tc, PACKET_HEADER_LENGTH + 15, size);
 
   int chk = 0x0;
-  data += PACKET_HEADER_LENGTH;
   for(int i = 0; i < size - PACKET_HEADER_LENGTH; i++) {
-    chk |= reference[i] ^ *(data++);
+    chk |= reference[i] ^ *(data + PACKET_HEADER_LENGTH + i);
   }
+#ifdef MALLOC_ALLOCATOR
+  free(data);
+#endif
+
   CuAssertIntEquals(tc, 0, chk);
   puts("OK");
 }

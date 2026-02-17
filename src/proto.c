@@ -156,7 +156,7 @@ enum {
 } parsingStatus = PSTATUS_DETECT;
 
 void resetDynamicParsers();
-void restartParsing()
+void restartParser()
 {
   parsingStatus = PSTATUS_DETECT;
   pkt.id = 0;
@@ -196,7 +196,7 @@ void finishRecieiving()
 
   totalPacketsReceived++;
   pkt.newReady = 1;
-  restartParsing();
+  restartParser();
   if(pktPrsCallback != NULL) pktPrsCallback(header.u.header, pkt.data);
 }
 
@@ -752,6 +752,9 @@ void hardResetParser()
 
 void resetParsing()
 {
+  resetDynamicParsers();
+  dealocateLastPacket();
+
   lstErrCode = 0;
 
   parsingStatus = PSTATUS_DETECT;
@@ -764,12 +767,6 @@ void resetParsing()
   pkt.dynamicFieldPointer = 0;
   pkt.requiredSize = 0;
   pkt.crc = CRC_INIT;
-
-  resetDynamicParsers();
-
-  if(pkt.newReady) {
-    dealocateLastPacket();
-  }
 
   pkt.newReady = 0;
 }

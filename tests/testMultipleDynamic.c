@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <malloc.h>
 #include <string.h>
 
 #include "CuTest.h"
@@ -8,7 +9,7 @@
 
 void TestMultipleDynamic(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   char *message = "The quick brown fox jumps over the lazy dog";
   MultipleDynamicPacket tp = {.s = message, .vu = 0x1001, .vi = 0x2556};
@@ -16,18 +17,22 @@ void TestMultipleDynamic(CuTest *tc)
   byte *data = generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
 
   for(int i = 0; i < size; i++) {
-    processByte(*data++);
+    processByte(*(data + i));
   }
 
   const int errCode = getLastErrorCode();
   CuAssertIntEquals(tc, 0, errCode);
   CuAssertTrue(tc, isNewPacketReady() != 0);
-  MultipleDynamicPacket received;
+  MultipleDynamicPacket received = {};
   PacketHeader header;
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.s, message));
   CuAssertIntEquals(tc, 0x1001, received.vu);
   CuAssertIntEquals(tc, 0x2556, received.vi);
+#ifdef MALLOC_ALLOCATOR
+  free(data);
+#endif
+
   puts("OK");
 }

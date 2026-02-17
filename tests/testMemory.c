@@ -25,7 +25,7 @@ uint64_t loop()
       processByte(*(data + i));
     }
 
-    MemoryTestPacket received;
+    MemoryTestPacket received = {};
     PacketHeader header;
     getPacket(&header, (void *)&received);
 #ifdef MALLOC_ALLOCATOR
@@ -44,7 +44,7 @@ uint64_t loop()
 }
 void TestMemory(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   resetParsing();
   struct mallinfo2 miStart = mallinfo2();
 

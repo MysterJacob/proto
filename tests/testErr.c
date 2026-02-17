@@ -11,7 +11,7 @@
 
 void TestErrorDetection(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   srand(0);
   resetParsing();
 
@@ -55,7 +55,7 @@ void TestErrorDetection(CuTest *tc)
 
 void TestPacketInJunk(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   srand(rand());
   resetParsing();
 
@@ -96,7 +96,7 @@ void TestPacketInJunk(CuTest *tc)
 
 void TestTotalNoise(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   srand(rand());
   resetParsing();
 

@@ -8,7 +8,7 @@
 
 void TestStaticGeneration(CuTest *tc)
 {
-  printf("%s.....", tc->name);
+  printf("\n%s.....", tc->name);
   hardResetParser();
   TestPacket2 testPacket = {0xDD, 0xFFF, 0xCCCCCCCC, 0xAAAAAAA};
 
@@ -21,7 +21,7 @@ void TestStaticGeneration(CuTest *tc)
   CuAssertIntEquals(tc, 0, getLastErrorCode());
 
   CuAssertTrue(tc, isNewPacketReady() != 0);
-  TestPacket2 received;
+  TestPacket2 received = {};
   PacketHeader header;
   getPacket(&header, (void *)&received);
 
@@ -31,7 +31,7 @@ void TestStaticGeneration(CuTest *tc)
   CuAssertIntEquals(tc, testPacket.sample16, received.sample16);
   CuAssertIntEquals(tc, testPacket.sampleU32, received.sampleU32);
 #ifdef MALLOC_ALLOCATOR
-  free((void *)rawData);
+  free(rawData);
 #endif
-puts("OK");
+  puts("OK");
 }
