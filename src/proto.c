@@ -88,7 +88,7 @@ void allocateMemoryForPacketData()
 #endif
 }
 
-void dealocateLastPacket()
+void freeLastPacket()
 {
   header.currentSize = 0;
 
@@ -459,7 +459,7 @@ void processByte(const byte data)
     case PSTATUS_DETECT:
       incrementMagicPointer(data);
       if(header.magicPointer >= MagicSize) {
-        dealocateLastPacket();
+        freeLastPacket();
         header.magicPointer = 0;
         parsingStatus = PSTATUS_HEADER;
       }
@@ -753,7 +753,7 @@ void hardResetParser()
 void resetParsing()
 {
   resetDynamicParsers();
-  dealocateLastPacket();
+  freeLastPacket();
 
   lstErrCode = 0;
 
