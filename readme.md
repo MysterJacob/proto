@@ -122,9 +122,11 @@ Defined in include/datatypes.h
 - [x] Refactor makefile
 - [x] Fix Ack/Seq numbers not working correctly
 - [x] Memory leaks when transmission error occurs while receiving a string
-- [ ] Multiple crc8 sum inside of packet (segmentation)
+- [ ] String size in packet struct
+- [ ] Skiping length for constant size packets
 
 ### Planned features
 - Transferring blobs of binary data
 - zlib compression
 - packet encryption
+- Multiple crc8 sum inside of packet (segmentation)
