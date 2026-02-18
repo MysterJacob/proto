@@ -16,7 +16,7 @@ void TestDynamicVaruintParsing(CuTest *tc)
     TestPacket4 tp = {.test1 = 0xFF - i, .varuint = value, .test2 = i};
 
     size_t size;
-    byte *data = generatePacket(4, (void *)&tp, &size);
+    byte *data = generatePacket(TestPacket4_ID, (void *)&tp, &size);
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
     for(int j = 0; j < size; j++) {
@@ -53,7 +53,7 @@ void TestDynamicVarintParsing(CuTest *tc)
     TestPacket5 tp = {.test1 = 0xFF - i, .varint = value * sign, .test2 = i};
 
     size_t size;
-    byte *data = generatePacket(5, (void *)&tp, &size);
+    byte *data = generatePacket(TestPacket5_ID, (void *)&tp, &size);
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
     for(int j = 0; j < size; j++) {
@@ -85,9 +85,9 @@ void TestDynamicStrParsing(CuTest *tc)
   printf("\n%s.....", tc->name);
   resetParsing();
   char *message = "The quick brown fox jumps over the lazy dog";
-  TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
+  StringParsingTest tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
   size_t size;
-  byte *data = generatePacket(3, (void *)&tp, &size);
+  byte *data = generatePacket(StringParsingTest_ID, (void *)&tp, &size);
 
   for(int i = 0; i < size; i++) {
     processByte(*(data + i));
@@ -96,7 +96,7 @@ void TestDynamicStrParsing(CuTest *tc)
   const int errCode = getLastErrorCode();
   CuAssertIntEquals(tc, 0, errCode);
   CuAssertTrue(tc, isNewPacketReady() != 0);
-  TestPacket3 received = {};
+  StringParsingTest received = {};
   PacketHeader header;
   getPacket(&header, (void *)&received);
 

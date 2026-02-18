@@ -13,7 +13,7 @@ void TestDynamicVaruintGeneration(CuTest *tc)
   TestPacket4 tp = {
       .test1 = 0xEE, .varuint = 32 | (15 << 7) | (96 << 14), .test2 = 0xEE};
   size_t size;
-  byte *data = generatePacket(4, (void *)&tp, &size);
+  byte *data = generatePacket(TestPacket4_ID, (void *)&tp, &size);
   const byte mask = 0b10000000;
   byte reference[] = {0xEE, 0xEE, 32 | mask, 15 | mask, 96};
 
@@ -37,7 +37,7 @@ void TestDynamicVarintGeneration(CuTest *tc)
   resetParsing();
   TestPacket5 tp = {.test1 = 0xEE, .varint = -35172, .test2 = 0xEE};
   size_t size;
-  byte *data = generatePacket(5, (void *)&tp, &size);
+  byte *data = generatePacket(TestPacket5_ID, (void *)&tp, &size);
   byte reference[] = {0xEE, 0xEE, 0xe4, 0x12, 0x82};
 
   CuAssertIntEquals(tc, 0, getLastErrorCode());
@@ -59,9 +59,9 @@ void TestDynamicStrGeneration(CuTest *tc)
   printf("\n%s.....", tc->name);
   resetParsing();
   char *message = "Hello world!";
-  TestPacket3 tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
+  StringParsingTest tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
   size_t size;
-  byte *data = generatePacket(3, (void *)&tp, &size);
+  byte *data = generatePacket(StringParsingTest_ID, (void *)&tp, &size);
   byte reference[] = {0xEE, 0xEE, 0xC, 'H', 'e', 'l', 'l', 'o',
                       ' ',  'w',  'o', 'r', 'l', 'd', '!'};
 

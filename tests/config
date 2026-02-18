@@ -7,7 +7,8 @@ CONFIG StringBufferSize 2048
 DEF TestPacket0
 DEF TestPacket1 sample8 INT8 sample16 INT16 sample32 INT32
 DEF TestPacket2 sampleu8 UINT8 sample16 INT16 sampleU32 UINT32 sample32 INT32
-DEF TestPacket3 test1 UINT8 message STRING test2 UINT8
+DEF StringParsingTest test1 UINT8 message STRING test2 UINT8
+DEF ErrorTestPacket test1 UINT8 m1 STRING test2 UINT8 m2 STRING
 DEF TestPacket4 test1 UINT8 varuint VARUINT test2 UINT8
 DEF TestPacket5 test1 UINT8 varint VARINT test2 UINT8
 DEF MultipleDynamicPacket s STRING vu VARUINT vi VARINT

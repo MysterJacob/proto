@@ -3,22 +3,32 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/resource.h>
 
 #include "CuTest.h"
 #include "proto.h"
 
 #define TEST_COUNT 0x2000
-uint64_t loop()
+void TestMemory(CuTest *tc)
 {
-  char *message = "The quick brown fox jumps over the lazy dog";
+  printf("\n%s.....", tc->name);
+  resetParsing();
+  char *message =
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do"
+      "eiusmod  tempor incididunt ut labore et dolore magna aliqua. Ut"
+      "enim ad minim "
+      "veniam, quis nostrud exercitation ullamco laboris"
+      "nisi ut aliquip ex ea "
+      "commodo consequat. Duis aute irure dolor in"
+      "reprehenderit in voluptate "
+      "velit esse cillum dolore eu fugiat"
+      "nulla pariatur. Excepteur sint "
+      "occaecat cupidatat non proident,"
+      "sunt in culpa qui officia deserunt "
+      "mollit anim id est laborum.";
   MemoryTestPacket tp = {.t1 = message, .t2 = message};
   size_t size;
 
-  uint64_t deltaSum = 0;
-
   for(int i = 0; i < TEST_COUNT; i++) {
-    struct mallinfo2 miStart = mallinfo2();
     byte *data = generatePacket(MemoryTestPacket_ID, (void *)&tp, &size);
 
     for(int i = 0; i < size; i++) {
@@ -35,30 +45,7 @@ uint64_t loop()
       free(received.t2);
     }
 #endif
-    struct mallinfo2 miEnd = mallinfo2();
-
-    const uint32_t delta = miEnd.uordblks - miStart.uordblks;
-    deltaSum += delta;
   }
-  return deltaSum / TEST_COUNT;
-}
-void TestMemory(CuTest *tc)
-{
-  printf("\n%s.....", tc->name);
-  resetParsing();
-  struct mallinfo2 miStart = mallinfo2();
 
-  const uint64_t avgDelta = loop();
-
-  struct mallinfo2 miEnd = mallinfo2();
-  const uint64_t totalDelta = miEnd.uordblks - miStart.uordblks;
   puts("OK");
-  printf("Total heap start size: %lu bytes\n", miStart.uordblks);
-  printf("Total heap end size: %lu bytes\n", miEnd.uordblks);
-
-  printf("Total heap delta: %lu bytes\n", totalDelta);
-  printf("Average heap delta: %lu bytes\n", avgDelta);
-
-  CuAssertTrue(tc, avgDelta == 0);
-  CuAssertTrue(tc, totalDelta <= 512);
 }

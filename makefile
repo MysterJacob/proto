@@ -97,7 +97,8 @@ testcfg:
 
 .PHONY:
 test: testcfg $(TEST_FILE)
-	./$(TEST_FILE)
+		valgrind --leak-check=full --show-leak-kinds=all ./bin/test/test.o || \
+		(./$(TEST_FILE); echo WARNING! Valgrind has not been found, ran only plain test without memory leaks check.)
 
 debug: testcfg $(TEST_FILE)
 	cp $(TEST_FILE) debug

@@ -14,7 +14,7 @@ void TestStaticGeneration(CuTest *tc)
 
   size_t size = 0;
 
-  byte *rawData = generatePacket(2, (void *)&testPacket, &size);
+  byte *rawData = generatePacket(TestPacket2_ID, (void *)&testPacket, &size);
   for(int i = 0; i < size; i++) {
     processByte(rawData[i]);
   }

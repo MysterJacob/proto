@@ -88,8 +88,10 @@ void allocateMemoryForPacketData()
 #endif
 }
 
+void resetDynamicParsers();
 void freeLastPacket()
 {
+  resetDynamicParsers();
   header.currentSize = 0;
 
 #ifdef MALLOC_ALLOCATOR
@@ -158,11 +160,11 @@ enum {
 void resetDynamicParsers();
 void restartParser()
 {
+  resetDynamicParsers();
   parsingStatus = PSTATUS_DETECT;
   pkt.id = 0;
   pkt.crc = CRC_INIT;
   pkt.dynamicFieldPointer = 0;
-  resetDynamicParsers();
 }
 
 uint16_t getDynamicCrc()
@@ -343,10 +345,17 @@ const size_t parseVarint(const byte data)
 struct {
   VARUINT requiredLen;
   size_t len;
+  int parsedCount;
   union {
     char *string;
     byte buffer[sizeof(char *)];
   } u;
+#ifdef MALLOC_ALLOCATOR
+  union {
+    void *string;
+    byte buffer[sizeof(void *)];
+  } last;
+#endif
 #ifdef BUFFER_ALLOCATOR
   size_t stringBufferStart;
   char stringBuffer[STRING_BUFFER_SIZE];
@@ -356,12 +365,12 @@ const size_t parseString(const byte data)
 {
   if(strPrsData.requiredLen == 0) {
     if(getVaruint(data, &strPrsData.requiredLen) == 0) {
-      //     if(strPrsData.requiredLen == 0) {
       return 0;
     }
     strPrsData.requiredLen++;  // Null terminator
 #ifdef MALLOC_ALLOCATOR
-    strPrsData.u.string = malloc(sizeof(char) * strPrsData.requiredLen);
+    strPrsData.u.string =
+        malloc(sizeof(char) * strPrsData.requiredLen + sizeof(STRING));
     if(strPrsData.u.string == 0) {
       reportError(PERR_MALLOC_FAILED);
       return 0;
@@ -376,31 +385,67 @@ const size_t parseString(const byte data)
     }
 #endif
   } else {
+    if(data == 0x00) {
+      reportError(PERR_UNEXPECTED_NULL);
+      return 0;
+    }
     strPrsData.u.string[strPrsData.len++] = data;
   }
 
   if(strPrsData.requiredLen - 1 != strPrsData.len) {
     return 0;
   }
+
   strPrsData.u.string[strPrsData.len++] = 0x0;
+
+#ifdef MALLOC_ALLOCATOR
+  for(int i = 0; i < sizeof(STRING); i++) {
+    strPrsData.u.string[strPrsData.len + i] = strPrsData.last.buffer[i];
+  }
+#endif
+
   writeBuffer(strPrsData.u.buffer, sizeof(char *));
 
-  const size_t ret = strPrsData.requiredLen;
 #ifdef BUFFER_ALLOCATOR
-  strPrsData.stringBufferStart += ret;
+  strPrsData.stringBufferStart += strPrsData.requiredLen;
 #endif
+
+#ifdef MALLOC_ALLOCATOR
+  strPrsData.last.string = strPrsData.u.string;
+#endif
+
+  const size_t returnLen = strPrsData.requiredLen;
   strPrsData.requiredLen = 0;
+  strPrsData.u.string = 0;
   strPrsData.len = 0;
-  return ret;
+  strPrsData.parsedCount++;
+
+  return returnLen;
 }
 
 void resetDynamicParsers()
 {
   strPrsData.len = 0;
 #ifdef MALLOC_ALLOCATOR
-  if(strPrsData.u.string != 0 && strPrsData.len != strPrsData.requiredLen)
+  if(strPrsData.u.string != 0) {
     free(strPrsData.u.string);
-  strPrsData.u.string = 0;
+    strPrsData.u.string = 0;
+  }
+
+  if(!pkt.newReady && strPrsData.parsedCount != 0) {
+    STRING block = strPrsData.last.string;
+    while(block != 0 && strPrsData.parsedCount-- > 0) {
+      STRING head = block;
+      while(*head++) {
+      }
+
+      head = (void *)(*(void **)head);
+      free(block);
+      block = head;
+    }
+  }
+  strPrsData.last.string = 0;
+  strPrsData.parsedCount = 0;
 #endif
 #ifdef BUFFER_ALLOCATOR
   strPrsData.stringBufferStart = 0;
@@ -656,7 +701,7 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   const size_t totalSize = datalength + header.totalLength;
 
 #ifdef MALLOC_ALLOCATOR
-  byte *const genPktData = (byte *)malloc(totalSize * sizeof(byte));
+  byte *const genPktData = (byte *)calloc(totalSize, sizeof(byte));
 #endif
 #ifdef BUFFER_ALLOCATOR
   if(totalSize > BUFFER_SIZE) {

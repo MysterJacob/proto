@@ -32,6 +32,7 @@ void TestMultipleDynamic(CuTest *tc)
   CuAssertIntEquals(tc, 0x2556, received.vi);
 #ifdef MALLOC_ALLOCATOR
   free(data);
+  free(received.s);
 #endif
 
   puts("OK");

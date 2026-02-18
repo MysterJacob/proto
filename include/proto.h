@@ -38,7 +38,8 @@ typedef enum {
   PERR_ACK_MISMATCH = 5,
   PERR_SEQ_MISMATCH = 6,
   PERR_DATA_CRC_MISMATCH = 7,
-  PERR_HDR_CRC_MISMATCH = 8
+  PERR_HDR_CRC_MISMATCH = 8,
+  PERR_UNEXPECTED_NULL = 9,
 } protoErrorCode;
 
 void processByte(const byte data);
