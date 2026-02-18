@@ -33,5 +33,6 @@ void TestStaticGeneration(CuTest *tc)
 #ifdef MALLOC_ALLOCATOR
   free(rawData);
 #endif
+  resetParsing();
   puts("OK");
 }
