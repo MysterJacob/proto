@@ -7,21 +7,23 @@ CONFIG DisableCrc no
 # Disable Sequence and Acknowledgment number check
 CONFIG DisableAckSeq yes
 # Type of allocator, use malloc or known size buffer
-CONFIG AllocatorType malloc
+CONFIG AllocatorType malloc/buffer
 # Size of buffer allocator (only needed when buffer allocator is enabled)
 CONFIG BufferSize 4096
 # Size of string buffer
 CONFIG StringBufferSize 2048
 
-#Define packet with name <SimplePacket> and two fields <Field1> and <Field2> with types INT8 and STRING (char*)
+# Define packet with name <SimplePacket> 
+# and two fields <Field1> and <Field2> with types INT8 and STRING (char*)
 DEF SimplePacket Field1 INT8 Field2 STRING
 ```
 ### Compilation
-Create file named &ltconfig> with config values and run ``make``.
-Compiled files are placed in bin/lib:
-- proto&#183;ar static .ar packed liblary
-- proto&#183;h header file containing all the definitions
-- proto&#183;so dynamic .so liblary
+Create file named `config` with config values and run ``make``.
+
+Compiled files are placed in `bin/lib`:
+- `proto.ar` static .ar packed library
+- `proto.h` header file containing all the definitions
+- `proto.so` dynamic .so library
 
 ### Usage
 
@@ -60,7 +62,7 @@ if(isNewPacketReady()) {
 }
 ```
 
-#### Parsing of packet (Using callback)
+#### Parsing of packet (Using callbacks)
 ```c
 void packetHandler(const PacketHeader header, void *packetData)
 {
@@ -76,7 +78,7 @@ void errorHandler(const protoErrorCode errorCode)
   puts("Error while receiving");
 }
 
-void parse() {
+void main() {
   setErrorCallback(errorHandler);
   setPacketCallback(packetHandler);
 
@@ -86,12 +88,11 @@ void parse() {
 }
 ```
 
-### Python API
-Python creator is still W.I.P.
+### Python API (Experimental)
 
 Run ``./pythoncreator.sh configFile proto.py output.py``
 
-<output&#183;py> will contain python API wrapper
+`output.py` will contain python API wrapper
 
 ### Data types
 Defined in include/datatypes.h
@@ -120,8 +121,10 @@ Defined in include/datatypes.h
 - [x] String of length 0 crashes
 - [x] Refactor makefile
 - [x] Fix Ack/Seq numbers not working correctly
-- [ ] Memory leaks when transmission error occures while receiving a string
+- [x] Memory leaks when transmission error occurs while receiving a string
+- [ ] Multiple crc8 sum inside of packet (segmentation)
 
-### Future
+### Planned features
+- Transferring blobs of binary data
 - zlib compression
 - packet encryption
