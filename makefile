@@ -1,10 +1,9 @@
 SHELL := bash
 
 CC ?= gcc
-SO_CC ?= $(CC)
 
 COMPILE_FLAGS = -Wall -Os
-DEBUG_FLAGS = -Wall -g3
+DEBUG_FLAGS = -Wall -g3 -pg
 
 INCLUDE_DIR = include/
 BUILD_DIR = bin/
@@ -17,6 +16,7 @@ SOURCES = $(wildcard $(SRC_DIR)*.c)
 TESTS_DIR = tests/
 CUTEST_DIR = cutest-1.5/
 
+OBJ_FILES = $(patsubst $(SRC_DIR)%.c, $(OBJ_DIR)%.o, $(SOURCES))
 SO_FILE = $(LIB_DIR)proto.so
 AR_FILE = $(LIB_DIR)proto.ar
 TEST_FILE = $(BUILD_DIR)test/test.o
@@ -26,42 +26,34 @@ PYTHON_FILE = $(LIB_DIR)proto.py
 CONFIG := config
 
 default: headers $(SO_FILE)
-all: headers $(SO_FILE) $(AR_FILE) $(PYTHON_FILE)
+all: headers $(SO_FILE) $(PYTHON_FILE)
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-	mkdir -p $(BUILD_DIR)lib/
-	mkdir -p $(BUILD_DIR)obj/
-	mkdir -p $(BUILD_DIR)test/
+	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)lib/
+	@mkdir -p $(BUILD_DIR)obj/
+	@mkdir -p $(BUILD_DIR)test/
 
 .PHONY:
-headers: $(BUILD_DIR) 
-	./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
+headers: $(BUILD_DIR)
+	@./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
-	cp $(INCLUDE_DIR)proto.h $(TARGET_HEADER)
+	@cp $(INCLUDE_DIR)proto.h $(TARGET_HEADER)
 
-	sed -i -e '/#include \"config.h\"/{r include/config.h' -e 'd}' $(TARGET_HEADER)
-	sed -i -e '/#include \"datatypes.h\"/{r include/datatypes.h' -e 'd}' $(TARGET_HEADER)
-	sed -i -e '/#include \"packets.h\"/{r include/packets.h' -e 'd}' $(TARGET_HEADER)
+	@sed -i -e '/#include \"config.h\"/{r include/config.h' -e 'd}' $(TARGET_HEADER)
+	@sed -i -e '/#include \"datatypes.h\"/{r include/datatypes.h' -e 'd}' $(TARGET_HEADER)
+	@sed -i -e '/#include \"packets.h\"/{r include/packets.h' -e 'd}' $(TARGET_HEADER)
 
-$(SO_FILE): $(BUILD_DIR) headers $(SOURCES)
-	$(SO_CC) $(COMPILE_FLAGS) \
-	-shared \
-	-fPIC \
-	-o $(SO_FILE) \
-	-I$(INCLUDE_DIR) $(SOURCES)
 
-$(AR_FILE): $(BUILD_DIR) headers $(SOURCES)
-	$(CC) $(COMPILE_FLAGS) \
-	-fPIC \
-	-I$(INCLUDE_DIR) \
-	-c $(SOURCES) \
-	-o $(OBJ_DIR)proto.o
+$(SO_FILE): $(BUILD_DIR) headers $(OBJ_FILES)
+	$(CC) $(COMPILE_FLAGS) -shared -o $(LIB_DIR)libproto.so $(OBJ_FILES)
+	ar rvs $(AR_FILE) $(OBJ_FILES)
 
-	ar rvs $(AR_FILE) $(OBJ_DIR)proto.o
+$(OBJ_DIR)%.o: $(SRC_DIR)%.c
+	$(CC) $(COMPILE_FLAGS) -I$(INCLUDE_DIR) -c -fPIC $< -o $@
 
 $(PYTHON_FILE): $(BUILD_DIR) $(CONFIG)
-	./pythoncreator.sh config proto.py $(PYTHON_FILE)
+	@./pythoncreator.sh config proto.py $(PYTHON_FILE)
 
 .PHONY:
 clean:
@@ -88,8 +80,6 @@ $(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES) $(AR_FILE)
 	$(TESTS) \
 	$(CUTEST_DIR)CuTest.c \
 	$(BUILD_DIR)test/AllTests.c \
-
-	chmod +x $(TEST_FILE) 
 
 .PHONY:
 testcfg:
