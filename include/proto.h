@@ -16,8 +16,10 @@ extern "C" {
 #define MAGIC_SIZE sizeof(MAGIC_BYTES) - 1
 #define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + MAGIC_SIZE)
 
+#include "crc.h"
+
 typedef volatile struct __attribute((packed)) {
-  uint16_t headerChecksum;
+  crcHeader_t headerChecksum;
   uint16_t length;
   uint8_t id;
 #ifndef DISABLE_ACK_SEQ_CHECK
@@ -25,7 +27,7 @@ typedef volatile struct __attribute((packed)) {
   uint16_t ackNumber;
 #endif
 #ifndef DISABLE_CRC_CHECK
-  uint16_t dataChecksum;
+  crcData_t dataChecksum;
 #endif
 } PacketHeader;
 

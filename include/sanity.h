@@ -8,6 +8,7 @@
 
 #if !defined(MALLOC_ALLOCATOR) && !defined(BUFFER_ALLOCATOR)
 #error No allocator type selected define MALLOC_ALLOCATOR or BUFFER_ALLOCATOR
+#
 #endif
 
 #if defined(MALLOC_ALLOCATOR) && defined(BUFFER_ALLOCATOR)

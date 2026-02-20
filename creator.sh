@@ -140,6 +140,12 @@ echo "$parsedConfig" | awk \
     else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
     else printf "\n#error Unknown config option %s\n", $2
   }
+  if($2 == "HeaderCrcType") {
+    printf "#define HEADER_CRC_ALGO %s\n", $3
+  }
+  if($2 == "DataCrcType") {
+    printf "#define DATA_CRC_ALGO %s\n", $3
+  }
   if($2 == "AllocatorType") {
     printf "#define "
     if(tolower($3) == "malloc") print "MALLOC_ALLOCATOR"

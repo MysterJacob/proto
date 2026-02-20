@@ -124,6 +124,7 @@ Defined in include/datatypes.h
 - [x] Memory leaks when transmission error occurs while receiving a string
 - [ ] String size in packet struct
 - [ ] Skiping length for constant size packets
+- [ ] Choose to calculate CRC or do LUT
 
 ### Planned features
 - Transferring blobs of binary data

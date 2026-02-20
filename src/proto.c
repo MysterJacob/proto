@@ -15,13 +15,10 @@
 extern "C" {
 #endif
 
-#define CRC_INIT 0xFFFF
-#define CRC_XOR 0x1211
-
 extern const datatype *const parserTable[];
 
 const size_t MagicSize = MAGIC_SIZE;
-const byte *MagicBytes = (byte *)MAGIC_BYTES;
+const uint8_t *MagicBytes = (uint8_t *)MAGIC_BYTES;
 const size_t CrcSize = 2;
 
 protoErrorCode lstErrCode = 0;
@@ -30,23 +27,25 @@ struct {
   const size_t totalLength;
   union {
     PacketHeader header;
-    byte data[sizeof(PacketHeader)];
+    uint8_t data[sizeof(PacketHeader)];
   } u;
   size_t currentSize;
   size_t magicPointer;
 } header = {PACKET_HEADER_LENGTH, {}, 0, 0};
 
 struct {
-  byte newReady;
+  uint8_t newReady;
   uint16_t id;
   size_t requiredSize;
   size_t currentSize;
   size_t currentLen;
-  uint16_t crc;
+#ifndef DISABLE_CRC_CHECK
+  crcData_t crc;
+#endif
   const datatype *dynamicFieldPointer;
-  byte *writer;
+  uint8_t *writer;
 #ifdef BUFFER_ALLOCATOR
-  byte data[BUFFER_SIZE];
+  uint8_t data[BUFFER_SIZE];
 #endif
 #ifdef MALLOC_ALLOCATOR
   void *data;
@@ -79,7 +78,7 @@ void allocateMemoryForPacketData()
     reportError(PERR_MALLOC_FAILED);
     return;
   }
-  pkt.writer = (byte *)pkt.data;
+  pkt.writer = (uint8_t *)pkt.data;
 #endif
 #ifdef BUFFER_ALLOCATOR
   for(int i = 0; i < BUFFER_SIZE; i++)
@@ -112,7 +111,7 @@ void freeLastPacket()
     header.u.data[i] = 0x00;
   }
 }
-void writeBuffer(const byte *data, size_t size)
+void writeBuffer(const uint8_t *data, size_t size)
 {
   if(pkt.currentSize + size > pkt.requiredSize) {
     reportError(PERR_BUFFER_OVERFLOW);
@@ -129,7 +128,7 @@ void writeBuffer(const byte *data, size_t size)
     *(pkt.writer++) = *data++;
   }
 }
-void writeByte(const byte data)
+void writeByte(const uint8_t data)
 {
   if(pkt.currentSize >= pkt.requiredSize) {
     reportError(PERR_BUFFER_OVERFLOW);
@@ -145,7 +144,7 @@ void writeByte(const byte data)
   pkt.currentSize++;
 }
 
-static inline void parseHeaderData(const byte data)
+static inline void parseHeaderData(const uint8_t data)
 {
   header.u.data[header.currentSize++] = data;
 }
@@ -163,13 +162,10 @@ void restartParser()
   resetDynamicParsers();
   parsingStatus = PSTATUS_DETECT;
   pkt.id = 0;
-  pkt.crc = CRC_INIT;
+#ifndef DISABLE_CRC_CHECK
+  resetDataCrc(&pkt.crc);
+#endif
   pkt.dynamicFieldPointer = 0;
-}
-
-uint16_t getDynamicCrc()
-{
-  return pkt.crc ^ CRC_XOR;
 }
 
 void finishRecieiving()
@@ -181,7 +177,7 @@ void finishRecieiving()
   }
 
 #ifndef DISABLE_CRC_CHECK
-  if(getDynamicCrc() != header.u.header.dataChecksum) {
+  if(getDataCrc(pkt.crc) != header.u.header.dataChecksum) {
     reportError(PERR_DATA_CRC_MISMATCH);
     return;
   }
@@ -202,19 +198,6 @@ void finishRecieiving()
   if(pktPrsCallback != NULL) pktPrsCallback(header.u.header, pkt.data);
 }
 
-#ifdef __AVR__
-inline uint16_t calculateCrc(byte *buffer, size_t size)
-#else
-uint16_t calculateCrc(byte *buffer, size_t size)
-#endif
-{
-  uint16_t crc = CRC_INIT;
-  while(size--) {
-    crc = (crc >> 8) ^ crc16_table[(crc ^ *buffer++) & 0xff];
-  }
-  return crc ^ CRC_XOR;
-}
-
 const datatype *getFirstDynamicField()
 {
   return parserTable[pkt.id] + packetStaticCount[pkt.id];
@@ -225,7 +208,7 @@ void finishHeaderParsing()
   const uint16_t prsHdrCrc = header.u.header.headerChecksum;
   header.u.header.headerChecksum = 0x0000;
   const uint16_t calculatedHdrCrc =
-      calculateCrc(header.u.data, sizeof(PacketHeader));
+      calculateHeaderCrc(header.u.data, sizeof(PacketHeader));
   header.u.header.headerChecksum = prsHdrCrc;
 
   if(calculatedHdrCrc != prsHdrCrc) {
@@ -271,7 +254,7 @@ struct {
   size_t size;
   VARUINT value;
 } vuinPrsData = {0, 0};
-const size_t getVaruint(const byte data, VARUINT *out)
+const size_t getVaruint(const uint8_t data, VARUINT *out)
 {
   const VARUINT value = data & 0x7F;
   const int marker = data & 0x80;
@@ -290,11 +273,11 @@ const size_t getVaruint(const byte data, VARUINT *out)
   return 0;
 }
 
-const size_t parseVaruint(const byte data)
+const size_t parseVaruint(const uint8_t data)
 {
   union {
     VARUINT value;
-    byte buffer[sizeof(VARUINT)];
+    uint8_t buffer[sizeof(VARUINT)];
   } u;
   size_t size = getVaruint(data, &u.value);
 
@@ -312,10 +295,10 @@ struct {
   size_t size;
   union {
     VARINT value;
-    byte buffer[sizeof(VARINT)];
+    uint8_t buffer[sizeof(VARINT)];
   } u;
 } vinPrsData = {1, 0};
-const size_t parseVarint(const byte data)
+const size_t parseVarint(const uint8_t data)
 {
   const int valueBits = data & 0x7F;
   const int markerBit = (data & 0x80) >> 7;
@@ -348,12 +331,12 @@ struct {
   int parsedCount;
   union {
     char *string;
-    byte buffer[sizeof(char *)];
+    uint8_t buffer[sizeof(char *)];
   } u;
 #ifdef MALLOC_ALLOCATOR
   union {
     void *string;
-    byte buffer[sizeof(void *)];
+    uint8_t buffer[sizeof(void *)];
   } last;
 #endif
 #ifdef BUFFER_ALLOCATOR
@@ -361,7 +344,7 @@ struct {
   char stringBuffer[STRING_BUFFER_SIZE];
 #endif
 } strPrsData = {0, 0};
-const size_t parseString(const byte data)
+const size_t parseString(const uint8_t data)
 {
   if(strPrsData.requiredLen == 0) {
     if(getVaruint(data, &strPrsData.requiredLen) == 0) {
@@ -460,7 +443,7 @@ void resetDynamicParsers()
   vuinPrsData.size = 0;
 }
 
-void processDynamicData(const byte data)
+void processDynamicData(const uint8_t data)
 {
   switch(*pkt.dynamicFieldPointer) {
     case TYPE_VARUINT:
@@ -483,12 +466,7 @@ void processDynamicData(const byte data)
   }
 }
 
-void calculateDynamicCrc(byte data)
-{
-  pkt.crc = (pkt.crc >> 8) ^ crc16_table[(pkt.crc ^ data) & 0xff];
-}
-
-void incrementMagicPointer(byte data)
+void incrementMagicPointer(uint8_t data)
 {
   if((MagicBytes[header.magicPointer] ^ data) == 0x0)
     header.magicPointer++;
@@ -498,7 +476,7 @@ void incrementMagicPointer(byte data)
     header.magicPointer = 0;
 }
 
-void processByte(const byte data)
+void processByte(const uint8_t data)
 {
   switch(parsingStatus) {
     case PSTATUS_DETECT:
@@ -518,7 +496,7 @@ void processByte(const byte data)
       break;
     case PSTATUS_STATICDATA:
 #ifndef DISABLE_CRC_CHECK
-      calculateDynamicCrc(data);
+      updateDataCrc(&pkt.crc, data);
 #endif
       writeByte(data);
       if(lstErrCode) return;
@@ -531,7 +509,7 @@ void processByte(const byte data)
       break;
     case PSTATUS_DYNAMICDATA:
 #ifndef DISABLE_CRC_CHECK
-      calculateDynamicCrc(data);
+      updateDataCrc(&pkt.crc, data);
 #endif
       processDynamicData(data);
 
@@ -610,7 +588,7 @@ const size_t calculateDynamicSize(const uint32_t id, const void *data)
   return totalSize;
 }
 
-const size_t generateVaruint(VARUINT varuint, byte *packetData)
+const size_t generateVaruint(VARUINT varuint, uint8_t *packetData)
 {
   const char mask = 0b10000000;
   size_t size = 0;
@@ -622,9 +600,9 @@ const size_t generateVaruint(VARUINT varuint, byte *packetData)
   return size;
 }
 
-const size_t generateVarint(VARINT varint, byte *packetData)
+const size_t generateVarint(VARINT varint, uint8_t *packetData)
 {
-  byte signbit = 0x0;
+  uint8_t signbit = 0x0;
   if(varint < 0) {
     signbit = 0x80;
     varint *= -1;
@@ -640,7 +618,8 @@ const size_t generateVarint(VARINT varint, byte *packetData)
   return size;
 }
 
-const size_t generateString(const char *str, byte *packetData, size_t *strLen)
+const size_t generateString(const char *str, uint8_t *packetData,
+                            size_t *strLen)
 {
   size_t len = strlen(str);
   *strLen = len;
@@ -651,10 +630,10 @@ const size_t generateString(const char *str, byte *packetData, size_t *strLen)
 }
 
 void generateDynamicData(const uint32_t id, const void *data,
-                         const size_t staticLength, byte *genPktData)
+                         const size_t staticLength, uint8_t *genPktData)
 {
-  const byte *pktDynData = data + staticLength;
-  byte *dynDataWriter = genPktData + header.totalLength + staticLength;
+  const uint8_t *pktDynData = data + staticLength;
+  uint8_t *dynDataWriter = genPktData + header.totalLength + staticLength;
   const datatype *genDynFieldType = &parserTable[id][packetStaticCount[id]];
 
   size_t datasize = 0;
@@ -686,9 +665,9 @@ void generateDynamicData(const uint32_t id, const void *data,
 }
 
 #ifdef BUFFER_ALLOCATOR
-byte genPktData[BUFFER_SIZE];
+uint8_t genPktData[BUFFER_SIZE];
 #endif
-byte *generatePacket(const uint32_t id, const void *data, size_t *size)
+uint8_t *generatePacket(const uint32_t id, const void *data, size_t *size)
 {
   if(id >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
@@ -701,8 +680,9 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   const size_t totalSize = datalength + header.totalLength;
 
 #ifdef MALLOC_ALLOCATOR
-  byte *const genPktData = (byte *)calloc(totalSize, sizeof(byte));
+  uint8_t *const genPktData = (uint8_t *)calloc(totalSize, sizeof(uint8_t));
 #endif
+
 #ifdef BUFFER_ALLOCATOR
   if(totalSize > BUFFER_SIZE) {
     reportError(PERR_BUFFER_OVERFLOW);
@@ -713,7 +693,9 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
 #endif
 
   memcpy(genPktData, MagicBytes, MagicSize);
+
   memcpy(genPktData + header.totalLength, data, staticLength);
+
   if(packetDynamicCount[id] != 0) {
     generateDynamicData(id, data, staticLength, genPktData);
   }
@@ -727,15 +709,19 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
       .ackNumber = totalPacketsReceived,
 #endif
 #ifndef DISABLE_CRC_CHECK
-      .dataChecksum = calculateCrc(genPktData + header.totalLength, datalength),
+      .dataChecksum =
+          calculateDataCrc(genPktData + header.totalLength, datalength),
 #endif
   };
 
-  genHdr.headerChecksum = calculateCrc((void *)&genHdr, sizeof(PacketHeader));
+  genHdr.headerChecksum =
+      calculateHeaderCrc((void *)&genHdr, sizeof(PacketHeader));
   memcpy(genPktData + MagicSize, (void *)&genHdr, sizeof(PacketHeader));
 
   totalPacketsSent++;
+
   if(size != NULL) *size = totalSize;
+
 #ifdef MALLOC_ALLOCATOR
   return genPktData;
 #endif
@@ -743,7 +729,8 @@ byte *generatePacket(const uint32_t id, const void *data, size_t *size)
   return &genPktData[0];
 #endif
 }
-byte *getLastGeneratedPacket()
+
+uint8_t *getLastGeneratedPacket()
 {
   return pkt.data;
 }
@@ -811,7 +798,9 @@ void resetParsing()
   pkt.currentSize = 0;
   pkt.dynamicFieldPointer = 0;
   pkt.requiredSize = 0;
-  pkt.crc = CRC_INIT;
+#ifndef DISABLE_CRC_CHECK
+  resetDataCrc(&pkt.crc);
+#endif
 
   pkt.newReady = 0;
 }

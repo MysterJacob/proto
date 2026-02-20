@@ -1,0 +1,6 @@
+#define CRC32_POSIX 0x10000
+
+#define CRC16_XMODEM 0x100
+#define CRC16_IBM3740 0x101
+
+#define CRC8_TECH3250 0x001

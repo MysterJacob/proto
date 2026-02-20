@@ -3,6 +3,8 @@ CONFIG DisableAckSeq yes
 CONFIG AllocatorType malloc
 CONFIG BufferSize 4096
 CONFIG StringBufferSize 2048
+CONFIG HeaderCrcType CRC16_XMODEM
+CONFIG DataCrcType CRC16_XMODEM
 
 DEF TestPacket0
 DEF TestPacket1 sample8 INT8 sample16 INT16 sample32 INT32

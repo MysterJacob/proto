@@ -35,7 +35,7 @@ $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)test/
 
 .PHONY:
-headers: $(BUILD_DIR)
+headers: $(CONFIG) $(BUILD_DIR)
 	@./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
 	@cp $(INCLUDE_DIR)proto.h $(TARGET_HEADER)
@@ -60,7 +60,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 TESTS = $(wildcard $(TESTS_DIR)*.c)
-$(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES) $(AR_FILE)
+$(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES) 
 	cp \
 	$(TESTS) \
 	$(CUTEST_DIR)CuTest.h \
