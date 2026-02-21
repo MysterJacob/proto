@@ -44,12 +44,11 @@ headers: $(CONFIG) $(BUILD_DIR)
 	@sed -i -e '/#include \"datatypes.h\"/{r include/datatypes.h' -e 'd}' $(TARGET_HEADER)
 	@sed -i -e '/#include \"packets.h\"/{r include/packets.h' -e 'd}' $(TARGET_HEADER)
 
-
 $(SO_FILE): $(BUILD_DIR) headers $(OBJ_FILES)
 	$(CC) $(COMPILE_FLAGS) -shared -o $(LIB_DIR)libproto.so $(OBJ_FILES)
 	ar rvs $(AR_FILE) $(OBJ_FILES)
 
-$(OBJ_DIR)%.o: $(SRC_DIR)%.c
+$(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG)
 	$(CC) $(COMPILE_FLAGS) -I$(INCLUDE_DIR) -c -fPIC $< -o $@
 
 $(PYTHON_FILE): $(BUILD_DIR) $(CONFIG)
