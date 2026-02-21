@@ -38,11 +38,14 @@ $(BUILD_DIR):
 headers: $(CONFIG) $(BUILD_DIR)
 	@./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
-	@cp $(INCLUDE_DIR)proto.h $(TARGET_HEADER)
-
-	@sed -i -e '/#include \"config.h\"/{r include/config.h' -e 'd}' $(TARGET_HEADER)
-	@sed -i -e '/#include \"datatypes.h\"/{r include/datatypes.h' -e 'd}' $(TARGET_HEADER)
-	@sed -i -e '/#include \"packets.h\"/{r include/packets.h' -e 'd}' $(TARGET_HEADER)
+# 	@cp $(INCLUDE_DIR)proto.h $(TARGET_HEADER)
+	gcc -I$(INCLUDE_DIR) -nostdlib -DHEADER_COMPILATION -E include/proto.h -o $(TARGET_HEADER)
+	awk -i inplace -F" " 'BEGINFILE{print "#include <stdint.h>\n#include <stddef.h>"} /^[^#]/{print $0}' $(TARGET_HEADER)
+# 	sed '/# \d*.*//' $(TARGET_HEADER)
+# 	@sed -i -e '/\# \d//g' $(TARGET_HEADER)
+# 	@sed -i -e '/#include \"config.h\"/{r include/config.h' -e 'd}' $(TARGET_HEADER)
+# 	@sed -i -e '/#include \"datatypes.h\"/{r include/datatypes.h' -e 'd}' $(TARGET_HEADER)
+# 	@sed -i -e '/#include \"packets.h\"/{r include/packets.h' -e 'd}' $(TARGET_HEADER)
 
 $(SO_FILE): $(BUILD_DIR) headers $(OBJ_FILES)
 	$(CC) $(COMPILE_FLAGS) -shared -o $(LIB_DIR)libproto.so $(OBJ_FILES)
@@ -50,6 +53,10 @@ $(SO_FILE): $(BUILD_DIR) headers $(OBJ_FILES)
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG)
 	$(CC) $(COMPILE_FLAGS) -I$(INCLUDE_DIR) -c -fPIC $< -o $@
+
+.PHONY:
+example: $(SO_FILE)
+	gcc $(DEBUG_FLAGS) -I$(LIB_DIR) example/main.c $(AR_FILE) -o $(BIN_DIR)/obj/example.o
 
 $(PYTHON_FILE): $(BUILD_DIR) $(CONFIG)
 	@./pythoncreator.sh config proto.py $(PYTHON_FILE)

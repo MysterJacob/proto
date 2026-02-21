@@ -4,8 +4,10 @@ extern "C" {
 
 #ifndef protoh
 #define protoh
+#ifndef HEADER_COMPILATION
 #include <stddef.h>
 #include <stdint.h>
+#endif
 
 #include "config.h"
 #include "datatypes.h"

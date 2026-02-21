@@ -12,6 +12,10 @@ CONFIG AllocatorType malloc/buffer
 CONFIG BufferSize 4096
 # Size of string buffer
 CONFIG StringBufferSize 2048
+# Use CRC8-Techo3250 for header
+CONFIG HeaderCrcType CRC8_TECH3250
+# Use Crc16-Xmodem for data
+# Crc algorithms: CRC32_POSIX, CRC16_XMODEM, CRC16_IBM3740, CRC8_TECH3250
 
 # Define packet with name <SimplePacket> 
 # and two fields <Field1> and <Field2> with types INT8 and STRING (char*)

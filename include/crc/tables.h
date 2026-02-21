@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "types.h"
 
 #if CRC_ALGO == CRC32_POSIX

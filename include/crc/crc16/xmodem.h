@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 #define CRC_DTYPE uint16_t
 #define CRC_INIT 0x0000
 #define CRC_POLY 0x1021
