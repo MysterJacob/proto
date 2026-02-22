@@ -147,9 +147,8 @@ echo "$parsedConfig" | awk \
     printf "#define DATA_CRC_ALGO %s\n", $3
   }
   if($2 == "AllocatorType") {
-    printf "#define "
-    if(tolower($3) == "malloc") print "MALLOC_ALLOCATOR"
-    if(tolower($3) == "buffer") print "BUFFER_ALLOCATOR"
+    if(tolower($3) == "malloc") print "#define MALLOC_ALLOCATOR"
+    else if(tolower($3) == "buffer") print "#define BUFFER_ALLOCATOR"
   }
   if($2 == "BufferSize") {
     printf "#define BUFFER_SIZE %s\n", $3

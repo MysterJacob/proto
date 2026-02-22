@@ -6,8 +6,8 @@
 CONFIG DisableCrc no
 # Disable Sequence and Acknowledgment number check
 CONFIG DisableAckSeq yes
-# Type of allocator, use malloc or known size buffer
-CONFIG AllocatorType malloc/buffer
+# Type of allocator, use malloc or known size buffer (malloc/buffer)
+CONFIG AllocatorType malloc
 # Size of buffer allocator (only needed when buffer allocator is enabled)
 CONFIG BufferSize 4096
 # Size of string buffer
@@ -15,6 +15,7 @@ CONFIG StringBufferSize 2048
 # Use CRC8-Techo3250 for header
 CONFIG HeaderCrcType CRC8_TECH3250
 # Use Crc16-Xmodem for data
+CONFIG DataCrcType CRC16_XMODEM
 # Crc algorithms: CRC32_POSIX, CRC16_XMODEM, CRC16_IBM3740, CRC8_TECH3250
 
 # Define packet with name <SimplePacket> 
@@ -36,14 +37,14 @@ Compiled files are placed in `bin/lib`:
 SimplePacket packet = {.Field1 = 70, .Field2 = "ABCD1234"};
 
 size_t outsize;
-byte *serialized = generatePacket(SimplePacket_ID, &packet, &outsize);
+byte *serialized = generatePacket(SimplePacket_ID, (void*)&packet, &outsize);
 ```
 
 #### Parsing of packet
 ```c
 for(int i = 0; i < outsize; i++) {
     // processByte requires received bytes of serialized data as input
-    processByte(*input++);
+    processByte(*serialized++);
 }
 
 if(getLastErrorCode() != PERR_NOERR) {
@@ -82,7 +83,7 @@ void errorHandler(const protoErrorCode errorCode)
   puts("Error while receiving");
 }
 
-void main() {
+int main() {
   setErrorCallback(errorHandler);
   setPacketCallback(packetHandler);
 

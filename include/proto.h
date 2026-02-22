@@ -13,7 +13,7 @@ extern "C" {
 #include "datatypes.h"
 #include "packets.h"
 
-#define byte uint8_t
+typedef uint8_t byte;
 #define MAGIC_BYTES "\x57\x5F\xDE"
 #define MAGIC_SIZE sizeof(MAGIC_BYTES) - 1
 #define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + MAGIC_SIZE)
