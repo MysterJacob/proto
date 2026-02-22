@@ -1,14 +1,14 @@
 bin/
+.cache
 cutest-1.5/
 compile_commands.json
 tests/CuTest.h
-config
-debug
 include/parserTables.h
 include/packets.h
 include/config.h
-.cache
 python/proto.py
 gmon.out
+/config
+/debug
 **/*.o
 **/lib/
