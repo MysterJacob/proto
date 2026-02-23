@@ -54,6 +54,8 @@ $(PYTHON_FILE): $(BUILD_DIR) $(CONFIG)
 .PHONY:
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -f debug
+	rm -f gmon.out
 
 TESTS = $(wildcard $(TESTS_DIR)*.c)
 $(TEST_FILE): headers $(TESTS_DIR)config $(SOURCES) 
