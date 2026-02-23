@@ -127,7 +127,7 @@ Defined in include/datatypes.h
 - [x] Refactor makefile
 - [x] Fix Ack/Seq numbers not working correctly
 - [x] Memory leaks when transmission error occurs while receiving a string
-- [ ] String buffer of size 0
+- [x] String buffer of size 0
 - [ ] String size in packet struct
 - [ ] Skiping length for constant size packets
 - [ ] Choose to calculate CRC or do LUT

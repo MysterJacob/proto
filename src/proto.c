@@ -339,7 +339,7 @@ struct {
     uint8_t buffer[sizeof(void *)];
   } last;
 #endif
-#ifdef BUFFER_ALLOCATOR
+#if defined(BUFFER_ALLOCATOR) && STRING_BUFFER_SIZE != 0
   size_t stringBufferStart;
   char stringBuffer[STRING_BUFFER_SIZE];
 #endif
@@ -359,7 +359,7 @@ const size_t parseString(const uint8_t data)
       return 0;
     }
 #endif
-#ifdef BUFFER_ALLOCATOR
+#if defined(BUFFER_ALLOCATOR) && STRING_BUFFER_SIZE != 0
     strPrsData.u.string =
         &strPrsData.stringBuffer[strPrsData.stringBufferStart];
     if(strPrsData.stringBufferStart + strPrsData.len > STRING_BUFFER_SIZE) {
@@ -389,7 +389,7 @@ const size_t parseString(const uint8_t data)
 
   writeBuffer(strPrsData.u.buffer, sizeof(char *));
 
-#ifdef BUFFER_ALLOCATOR
+#if defined(BUFFER_ALLOCATOR) && STRING_BUFFER_SIZE != 0
   strPrsData.stringBufferStart += strPrsData.requiredLen;
 #endif
 
@@ -430,7 +430,7 @@ void resetDynamicParsers()
   strPrsData.last.string = 0;
   strPrsData.parsedCount = 0;
 #endif
-#ifdef BUFFER_ALLOCATOR
+#if defined(BUFFER_ALLOCATOR) && STRING_BUFFER_SIZE != 0
   strPrsData.stringBufferStart = 0;
 #endif
   strPrsData.requiredLen = 0;
