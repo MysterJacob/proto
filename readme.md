@@ -130,7 +130,8 @@ Defined in include/datatypes.h
 - [x] Fix Ack/Seq numbers not working correctly
 - [x] Memory leaks when transmission error occurs while receiving a string
 - [x] String buffer of size 0
-- [ ] String size in packet struct
+- [x] String size in packet struct
+- [ ] Dynamic crc calculation while creating packet
 - [ ] Skiping length for constant size packets
 - [ ] Choose to calculate CRC or do LUT
 

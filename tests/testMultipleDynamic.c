@@ -1,7 +1,7 @@
 #include <assert.h>
+#include <malloc.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <malloc.h>
 #include <string.h>
 
 #include "CuTest.h"
@@ -29,6 +29,9 @@ void TestMultipleDynamic(CuTest *tc)
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.s, message));
+#ifdef SAVE_STRING_SIZE
+  CuAssertIntEquals(tc, strlen(message), received.s_len);
+#endif
   CuAssertIntEquals(tc, 0x1001, received.vu);
   CuAssertIntEquals(tc, 0x2556, received.vi);
 #ifdef MALLOC_ALLOCATOR

@@ -1,5 +1,6 @@
 CONFIG DisableCrc no
 CONFIG DisableAckSeq yes
+CONFIG SaveStringSize yes
 CONFIG AllocatorType malloc
 CONFIG BufferSize 4096
 CONFIG MaxPacketSize 8128

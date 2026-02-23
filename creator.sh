@@ -124,7 +124,12 @@ echo "$parsedConfig" | awk -v regex="$DYNAMIC_TYPE_REGEX" \
 /^DEF/{
 printf "\ntypedef const volatile struct __attribute__((packed)) {\n"
 for(i=3;i<NF;i+=2) if(!($(i + 1) ~ regex)){ printf "\t%s %s;\n", $(i + 1), $i }
-for(i=3;i<NF;i+=2) if(($(i + 1) ~ regex)){ printf "\t%s %s;\n", $(i + 1), $i }
+for(i=3;i<NF;i+=2){
+  if(($(i + 1) ~ regex)){
+    printf "\t%s %s;\n", $(i + 1), $i, $i
+  }
+  if(($(i + 1) == "STRING")){ printf "#ifdef SAVE_STRING_SIZE\nsize_t %s_len;\n#endif\n", $i }
+}
 printf "} %s;\n", $2
 }
 ' >> $packetsh
@@ -139,6 +144,7 @@ echo "$parsedConfig" | awk \
     if($2 == "DisableCrc") print "DISABLE_CRC_CHECK"
     else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
     else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
+    else if($2 == "SaveStringSize") print "SAVE_STRING_SIZE"
     else printf "\n#error Unknown config option %s\n", $2
   }
   if($2 == "HeaderCrcType") {

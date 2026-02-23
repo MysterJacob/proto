@@ -393,6 +393,14 @@ const size_t parseString(const uint8_t data)
 
   writeBuffer(strPrsData.u.buffer, sizeof(char *));
 
+#ifdef SAVE_STRING_SIZE
+  union {
+    size_t len;
+    uint8_t buffer[sizeof(size_t)];
+  } saveStringSize = {strPrsData.len - 1};
+  writeBuffer(saveStringSize.buffer, sizeof(size_t));
+#endif
+
 #if defined(BUFFER_ALLOCATOR) && STRING_BUFFER_SIZE != 0
   strPrsData.stringBufferStart += strPrsData.requiredLen;
 #endif
@@ -582,6 +590,9 @@ const size_t calculateDynamicSize(const uint32_t id, const void *data)
         size_t size = length + calculateVaruintSize(length);
         totalSize += size;
         dataPointer += sizeof(STRING);
+#ifdef SAVE_STRING_SIZE
+        dataPointer += sizeof(size_t);
+#endif
       } break;
 
       default:
@@ -659,6 +670,9 @@ void generateDynamicData(const uint32_t id, const void *data,
         datasize =
             generateString(*(STRING *)pktDynData, dynDataWriter, &strLen);
         pktDynData += sizeof(STRING);
+#ifdef SAVE_STRING_SIZE
+        pktDynData += sizeof(size_t);
+#endif
       } break;
 
       default:
