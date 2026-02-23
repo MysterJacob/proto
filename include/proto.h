@@ -25,8 +25,8 @@ typedef volatile struct __attribute((packed)) {
   uint16_t length;
   uint8_t id;
 #ifndef DISABLE_ACK_SEQ_CHECK
-  uint16_t seqNumber;
-  uint16_t ackNumber;
+  uint8_t seqNumber;
+  uint8_t ackNumber;
 #endif
 #ifndef DISABLE_CRC_CHECK
   crcData_t dataChecksum;

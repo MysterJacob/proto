@@ -1,0 +1,14 @@
+CONFIG DisableCrc yes
+CONFIG DisableAckSeq yes
+CONFIG AllocatorType buffer
+CONFIG BufferSize 64
+CONFIG StringBufferSize 0
+CONFIG HeaderCrcType CRC8_TECH3250
+CONFIG DataCrcType CRC16_XMODEM
+
+DEF TemperaturePacket Temperature INT16
+DEF HumidityPacket Humidity INT16
+
+DEF FanPacket SetRPM INT8
+DEF HeaterPacket SetValue INT8
+
