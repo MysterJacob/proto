@@ -3,7 +3,7 @@
 #endif
 
 #ifdef DISABLE_CRC_CHECK
-#warning CRC16 checksum validation disabled!
+#warning Data checksum validation disabled!
 #endif
 
 #if !defined(MALLOC_ALLOCATOR) && !defined(BUFFER_ALLOCATOR)
