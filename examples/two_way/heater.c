@@ -30,7 +30,7 @@ void packetHandler(const PacketHeader header, void *packetData)
 void errorHandler(const protoErrorCode errorCode)
 {
   // ERROR!
-  fprintf(stderr, "Error %d while receiving\n", errorCode);
+  fprintf(stderr, "Heater: Error %d while receiving\n", errorCode);
   _exit(0x100 | errorCode);
 }
 void readData(FILE *stream)

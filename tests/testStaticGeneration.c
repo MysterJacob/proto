@@ -14,9 +14,10 @@ void TestStaticGeneration(CuTest *tc)
 
   size_t size = 0;
 
-  byte *rawData = generatePacket(TestPacket2_ID, (void *)&testPacket, &size);
+  byte *data = generatePacket(TestPacket2_ID, (void *)&testPacket, &size);
+  CuAssertTrue(tc, data != 0);
   for(int i = 0; i < size; i++) {
-    processByte(rawData[i]);
+    processByte(data[i]);
   }
   CuAssertIntEquals(tc, 0, getLastErrorCode());
 
@@ -31,7 +32,7 @@ void TestStaticGeneration(CuTest *tc)
   CuAssertIntEquals(tc, testPacket.sample16, received.sample16);
   CuAssertIntEquals(tc, testPacket.sampleU32, received.sampleU32);
 #ifdef MALLOC_ALLOCATOR
-  free(rawData);
+  free(data);
 #endif
   resetParsing();
   puts("OK");

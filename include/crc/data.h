@@ -2,12 +2,14 @@
 #define CRC_ALGO DATA_CRC_ALGO
 
 #include "crc/tables.h"
-
 typedef CRC_DTYPE crcData_t;
+
+#ifndef HEADER_COMPILATION
 crcData_t calculateDataCrc(uint8_t *buffer, size_t size);
 void updateDataCrc(crcData_t *crc, uint8_t data);
 crcData_t getDataCrc(crcData_t crc);
 void resetDataCrc(crcData_t *crc);
+#endif
 
 #ifdef CRC_DEFINE_META
 const struct {

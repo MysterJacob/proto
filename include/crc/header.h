@@ -3,10 +3,13 @@
 
 #include "crc/tables.h"
 typedef CRC_DTYPE crcHeader_t;
+
+#ifndef HEADER_COMPILATION
 crcHeader_t calculateHeaderCrc(uint8_t *buffer, size_t size);
 void updateHeaderCrc(crcHeader_t *crc, uint8_t data);
 crcHeader_t getHeaderCrc(crcHeader_t crc);
 void resetHeaderCrc(crcHeader_t *crc);
+#endif
 
 #ifdef CRC_DEFINE_META
 const struct {

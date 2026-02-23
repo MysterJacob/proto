@@ -2,6 +2,7 @@ CONFIG DisableCrc no
 CONFIG DisableAckSeq yes
 CONFIG AllocatorType malloc
 CONFIG BufferSize 4096
+CONFIG MaxPacketSize 8128
 CONFIG StringBufferSize 2048
 CONFIG HeaderCrcType CRC16_XMODEM
 CONFIG DataCrcType CRC16_XMODEM

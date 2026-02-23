@@ -30,6 +30,7 @@ void TestMemory(CuTest *tc)
 
   for(int i = 0; i < TEST_COUNT; i++) {
     byte *data = generatePacket(MemoryTestPacket_ID, (void *)&tp, &size);
+    CuAssertTrue(tc, data != 0);
 
     for(int i = 0; i < size; i++) {
       processByte(*(data + i));

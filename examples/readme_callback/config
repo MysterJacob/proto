@@ -6,6 +6,8 @@ CONFIG DisableAckSeq yes
 CONFIG AllocatorType malloc
 # Size of buffer allocator (only needed when buffer allocator is enabled)
 CONFIG BufferSize 4096
+# Maximum packet size
+CONFIG MaxPacketSize 32
 # Size of string buffer
 CONFIG StringBufferSize 2048
 # Use CRC8-Techo3250 for header

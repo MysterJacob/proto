@@ -138,23 +138,23 @@ echo "$parsedConfig" | awk \
     printf "#define "
     if($2 == "DisableCrc") print "DISABLE_CRC_CHECK"
     else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
+    else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
     else printf "\n#error Unknown config option %s\n", $2
   }
   if($2 == "HeaderCrcType") {
     printf "#define HEADER_CRC_ALGO %s\n", $3
-  }
-  if($2 == "DataCrcType") {
+  }else if($2 == "DataCrcType") {
     printf "#define DATA_CRC_ALGO %s\n", $3
-  }
-  if($2 == "AllocatorType") {
+  }else if($2 == "AllocatorType") {
     if(tolower($3) == "malloc") print "#define MALLOC_ALLOCATOR"
     else if(tolower($3) == "buffer") print "#define BUFFER_ALLOCATOR"
-  }
-  if($2 == "BufferSize") {
+  }else if($2 == "BufferSize") {
     printf "#define BUFFER_SIZE %s\n", $3
-  }
-  if($2 == "StringBufferSize") {
+  }else if($2 == "MaxPacketSize") {
+    printf "#define MAX_PACKET_SIZE %s\n", $3
+  }else if($2 == "StringBufferSize") {
     printf "#define STRING_BUFFER_SIZE %s\n", $3
+  }else{
   }
 }
 ' >> $configh

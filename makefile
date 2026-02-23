@@ -38,8 +38,8 @@ $(BUILD_DIR):
 headers: $(CONFIG) $(BUILD_DIR)
 	@./creator.sh $(CONFIG) $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
-	gcc -I$(INCLUDE_DIR) -nostdlib -DHEADER_COMPILATION -E include/proto.h -o $(TARGET_HEADER)
-	awk -i inplace -F" " 'BEGINFILE{print "#include <stdint.h>\n#include <stddef.h>"} /^[^#]/{print $0}' $(TARGET_HEADER)
+	@gcc -I$(INCLUDE_DIR) -nostdlib -DHEADER_COMPILATION -E include/proto.h -o $(TARGET_HEADER)
+	@awk -i inplace -F" " 'BEGINFILE{print "#include <stdint.h>\n#include <stddef.h>"} /^[^#]/{print $0}' $(TARGET_HEADER)
 
 $(SO_FILE): $(BUILD_DIR) headers $(OBJ_FILES)
 	$(CC) $(COMPILE_FLAGS) -shared -o $(LIB_DIR)libproto.so $(OBJ_FILES)

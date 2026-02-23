@@ -19,3 +19,7 @@
     (!defined(BUFFER_SIZE) || !defined(STRING_BUFFER_SIZE))
 #error BUFFER_SIZE AND STRING_BUFFER_SIZE needed to use BUFFER_ALLOCATOR
 #endif
+
+#if defined(BUFFER_ALLOCATOR) && MAX_PACKET_SIZE > BUFFER_SIZE
+#error Buffer size is smaller than maximum packet size
+#endif

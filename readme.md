@@ -12,6 +12,8 @@ CONFIG AllocatorType malloc
 CONFIG BufferSize 4096
 # Size of string buffer
 CONFIG StringBufferSize 2048
+# Maximum packet size
+CONFIG MaxPacketSize 32
 # Use CRC8-Techo3250 for header
 CONFIG HeaderCrcType CRC8_TECH3250
 # Use Crc16-Xmodem for data

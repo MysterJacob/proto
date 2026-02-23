@@ -52,6 +52,7 @@ void TestErrorDetection(CuTest *tc)
   int collisionCount = 0;
   for(int i = 0; i < TEST_SIZE; i++) {
     byte *data = generatePacket(ErrorTestPacket_ID, (void *)&tp, &size);
+    CuAssertTrue(tc, data != 0);
 
     for(int j = 0; j < 0x1000; j++) {
       byte r = rand() % 0xFF;
@@ -100,6 +101,7 @@ void TestPacketInJunk(CuTest *tc)
 
   for(int i = 0; i < TEST_SIZE; i++) {
     byte *data = generatePacket(ErrorTestPacket_ID, (void *)&tp, &size);
+    CuAssertTrue(tc, data != 0);
 
     for(int j = 0; j < 0x1000; j++) {
       byte r = rand() % 0xFF;

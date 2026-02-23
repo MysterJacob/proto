@@ -221,6 +221,10 @@ void finishHeaderParsing()
     reportError(PERR_UNKNOWN_ID);
     return;
   }
+  if(header.u.header.length > MAX_PACKET_SIZE) {
+    reportError(PERR_PACKET_TOO_LARGE);
+    return;
+  }
 
   pkt.requiredSize = packetStructSizes[pkt.id];
 
@@ -678,6 +682,11 @@ uint8_t *generatePacket(const uint32_t id, const void *data, size_t *size)
   const size_t dynamicLength = calculateDynamicSize(id, data);
   const size_t datalength = staticLength + dynamicLength;
   const size_t totalSize = datalength + header.totalLength;
+
+  if(totalSize > MAX_PACKET_SIZE) {
+    reportError(PERR_PACKET_TOO_LARGE);
+    return 0;
+  }
 
 #ifdef MALLOC_ALLOCATOR
   uint8_t *const genPktData = (uint8_t *)calloc(totalSize, sizeof(uint8_t));

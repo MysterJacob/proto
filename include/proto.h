@@ -19,15 +19,26 @@ typedef uint8_t byte;
 #define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + MAGIC_SIZE)
 
 #include "crc.h"
+#if MAX_PACKET_SIZE < 256
+typedef uint8_t packetSize_t;
+#elif MAX_PACKET_SIZE < 65536
+typedef uint16_t packetSize_t;
+#elif MAX_PACKET_SIZE < 4294967296
+typedef uint32_t packetSize_t;
+#else
+#error Packet too large!
+#endif
 
 typedef volatile struct __attribute((packed)) {
   crcHeader_t headerChecksum;
-  uint16_t length;
+  packetSize_t length;
   uint8_t id;
+
 #ifndef DISABLE_ACK_SEQ_CHECK
   uint8_t seqNumber;
   uint8_t ackNumber;
 #endif
+
 #ifndef DISABLE_CRC_CHECK
   crcData_t dataChecksum;
 #endif
@@ -44,6 +55,7 @@ typedef enum {
   PERR_DATA_CRC_MISMATCH = 7,
   PERR_HDR_CRC_MISMATCH = 8,
   PERR_UNEXPECTED_NULL = 9,
+  PERR_PACKET_TOO_LARGE = 10,
 } protoErrorCode;
 
 void processByte(const byte data);

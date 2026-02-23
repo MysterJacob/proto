@@ -17,6 +17,7 @@ void TestDynamicVaruintParsing(CuTest *tc)
 
     size_t size;
     byte *data = generatePacket(TestPacket4_ID, (void *)&tp, &size);
+    CuAssertTrue(tc, data != 0);
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
     for(int j = 0; j < size; j++) {
@@ -54,6 +55,7 @@ void TestDynamicVarintParsing(CuTest *tc)
 
     size_t size;
     byte *data = generatePacket(TestPacket5_ID, (void *)&tp, &size);
+    CuAssertTrue(tc, data != 0);
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
     for(int j = 0; j < size; j++) {
@@ -88,6 +90,7 @@ void TestDynamicStrParsing(CuTest *tc)
   StringParsingTest tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
   size_t size;
   byte *data = generatePacket(StringParsingTest_ID, (void *)&tp, &size);
+  CuAssertTrue(tc, data != 0);
 
   for(int i = 0; i < size; i++) {
     processByte(*(data + i));
@@ -117,6 +120,7 @@ void TestEmptyString(CuTest *tc)
   MultipleDynamicPacket tp = {message, 1234, 4312};
   size_t size;
   byte *data = generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
+  CuAssertTrue(tc, data != 0);
 
   for(int i = 0; i < size; i++) {
     processByte(*(data + i));
