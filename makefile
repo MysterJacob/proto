@@ -90,3 +90,6 @@ test: testcfg $(TEST_FILE)
 
 debug: testcfg $(TEST_FILE)
 	cp $(TEST_FILE) debug
+
+profile:
+	gprof ./bin/test/test.o gmon.out
