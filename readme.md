@@ -1,7 +1,4 @@
-
-
-
-﻿# proto (parser/generator)
+﻿# Proto (parser/generator)
 
 Used to serialize and deserialize packets for communicating between devices. Highly configurable to suit different project.
 Configuration is done via a makefile at compile time; the result is a ready to use communication protocol
