@@ -25,7 +25,7 @@ TARGET_HEADER = $(LIB_DIR)proto.h
 PYTHON_FILE = $(LIB_DIR)proto.py
 
 
-default: headers $(SO_FILE)
+default: $(CONFIG) headers $(SO_FILE)
 all: headers $(SO_FILE) $(PYTHON_FILE)
 
 $(BUILD_DIR):

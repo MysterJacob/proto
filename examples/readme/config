@@ -2,6 +2,8 @@
 CONFIG DisableCrc no
 # Disable Sequence and Acknowledgment number check
 CONFIG DisableAckSeq yes
+# Skip sending packet len for known size packets
+CONFIG SkipLen yes
 # Type of allocator, use malloc or known size buffer
 CONFIG AllocatorType malloc
 # Size of buffer allocator (only needed when buffer allocator is enabled)

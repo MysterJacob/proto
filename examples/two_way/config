@@ -1,5 +1,6 @@
 CONFIG DisableCrc yes
 CONFIG DisableAckSeq yes
+CONFIG SkipLen yes
 CONFIG AllocatorType buffer
 CONFIG BufferSize 32
 CONFIG MaxPacketSize 32

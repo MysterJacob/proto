@@ -16,27 +16,25 @@ extern "C" {
 #endif
 
 extern const datatype *const parserTable[];
-
 const size_t MagicSize = MAGIC_SIZE;
 const uint8_t *MagicBytes = (uint8_t *)MAGIC_BYTES;
-const size_t CrcSize = 2;
 
 protoErrorCode lstErrCode = 0;
 
 struct {
-  const size_t totalLength;
   union {
-    PacketHeader header;
+    PacketHeader hdr;
     uint8_t data[sizeof(PacketHeader)];
   } u;
-  size_t currentSize;
+  size_t size;
   size_t magicPointer;
-} header = {PACKET_HEADER_LENGTH, {}, 0, 0};
+} hdr = {{}, 0, 0};
 
 struct {
   uint8_t newReady;
-  uint16_t id;
+  packetId_t id;
   size_t requiredSize;
+  // FIX
   size_t currentSize;
   size_t currentLen;
 #ifndef DISABLE_CRC_CHECK
@@ -91,7 +89,7 @@ void resetDynamicParsers();
 void freeLastPacket()
 {
   resetDynamicParsers();
-  header.currentSize = 0;
+  hdr.size = 0;
 
 #ifdef MALLOC_ALLOCATOR
   if(pkt.data != 0) free((void *)pkt.data);
@@ -108,7 +106,7 @@ void freeLastPacket()
   pkt.requiredSize = 0;
 
   for(int i = 0; i < sizeof(PacketHeader); i++) {
-    header.u.data[i] = 0x00;
+    hdr.u.data[i] = 0x00;
   }
 }
 void writeBuffer(const uint8_t *data, size_t size)
@@ -146,7 +144,16 @@ void writeByte(const uint8_t data)
 
 static inline void parseHeaderData(const uint8_t data)
 {
-  header.u.data[header.currentSize++] = data;
+  hdr.u.data[hdr.size++] = data;
+#ifdef SKIP_LEN
+  if(hdr.size == sizeof(PacketHeader) - sizeof(packetSize_t) &&
+     hdr.u.hdr.id <= definedPacketCount &&
+     packetDynamicCount[hdr.u.hdr.id] == 0) {
+    hdr.u.hdr.length = packetStaticSizes[hdr.u.hdr.id];
+    hdr.size = sizeof(PacketHeader);
+    return;
+  }
+#endif
 }
 
 enum {
@@ -170,14 +177,14 @@ void restartParser()
 
 void finishRecieiving()
 {
-  if(pkt.currentLen != header.u.header.length ||
+  if(pkt.currentLen != hdr.u.hdr.length ||
      pkt.currentSize != pkt.requiredSize) {
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
 
 #ifndef DISABLE_CRC_CHECK
-  if(getDataCrc(pkt.crc) != header.u.header.dataChecksum) {
+  if(getDataCrc(pkt.crc) != hdr.u.hdr.dataChecksum) {
     reportError(PERR_DATA_CRC_MISMATCH);
     return;
   }
@@ -195,7 +202,7 @@ void finishRecieiving()
   totalPacketsReceived++;
   pkt.newReady = 1;
   restartParser();
-  if(pktPrsCallback != NULL) pktPrsCallback(header.u.header, pkt.data);
+  if(pktPrsCallback != NULL) pktPrsCallback(hdr.u.hdr, pkt.data);
 }
 
 const datatype *getFirstDynamicField()
@@ -205,23 +212,23 @@ const datatype *getFirstDynamicField()
 
 void finishHeaderParsing()
 {
-  const uint16_t prsHdrCrc = header.u.header.headerChecksum;
-  header.u.header.headerChecksum = 0x0000;
+  const uint16_t prsHdrCrc = hdr.u.hdr.headerChecksum;
+  hdr.u.hdr.headerChecksum = 0x0000;
   const uint16_t calculatedHdrCrc =
-      calculateHeaderCrc(header.u.data, sizeof(PacketHeader));
-  header.u.header.headerChecksum = prsHdrCrc;
+      calculateHeaderCrc(hdr.u.data, sizeof(PacketHeader));
+  hdr.u.hdr.headerChecksum = prsHdrCrc;
 
   if(calculatedHdrCrc != prsHdrCrc) {
     reportError(PERR_HDR_CRC_MISMATCH);
     return;
   }
 
-  pkt.id = header.u.header.id;
+  pkt.id = hdr.u.hdr.id;
   if(pkt.id >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
     return;
   }
-  if(header.u.header.length > MAX_PACKET_SIZE) {
+  if(hdr.u.hdr.length > MAX_PACKET_SIZE) {
     reportError(PERR_PACKET_TOO_LARGE);
     return;
   }
@@ -480,12 +487,12 @@ void processDynamicData(const uint8_t data)
 
 void incrementMagicPointer(uint8_t data)
 {
-  if((MagicBytes[header.magicPointer] ^ data) == 0x0)
-    header.magicPointer++;
+  if((MagicBytes[hdr.magicPointer] ^ data) == 0x0)
+    hdr.magicPointer++;
   else if((MagicBytes[0] ^ data) == 0x0)
-    header.magicPointer = 1;
+    hdr.magicPointer = 1;
   else
-    header.magicPointer = 0;
+    hdr.magicPointer = 0;
 }
 
 void processByte(const uint8_t data)
@@ -493,15 +500,15 @@ void processByte(const uint8_t data)
   switch(parsingStatus) {
     case PSTATUS_DETECT:
       incrementMagicPointer(data);
-      if(header.magicPointer >= MagicSize) {
+      if(hdr.magicPointer >= MagicSize) {
         freeLastPacket();
-        header.magicPointer = 0;
+        hdr.magicPointer = 0;
         parsingStatus = PSTATUS_HEADER;
       }
       break;
     case PSTATUS_HEADER:
       parseHeaderData(data);
-      if(header.currentSize == sizeof(PacketHeader)) {
+      if(hdr.size == sizeof(PacketHeader)) {
         finishHeaderParsing();
       }
 
@@ -528,7 +535,7 @@ void processByte(const uint8_t data)
       if(lstErrCode) return;
       pkt.currentLen++;
       if(*pkt.dynamicFieldPointer == 0x0 ||
-         pkt.currentLen >= header.u.header.length) {
+         pkt.currentLen >= hdr.u.hdr.length) {
         finishRecieiving();
       }
 
@@ -645,10 +652,10 @@ const size_t generateString(const char *str, uint8_t *packetData,
 }
 
 void generateDynamicData(const uint32_t id, const void *data,
-                         const size_t staticLength, uint8_t *genPktData)
+                         const size_t staticLength, uint8_t *dataPtr)
 {
   const uint8_t *pktDynData = data + staticLength;
-  uint8_t *dynDataWriter = genPktData + header.totalLength + staticLength;
+  uint8_t *dynDataWriter = dataPtr + staticLength;
   const datatype *genDynFieldType = &parserTable[id][packetStaticCount[id]];
 
   size_t datasize = 0;
@@ -683,9 +690,9 @@ void generateDynamicData(const uint32_t id, const void *data,
 }
 
 #ifdef BUFFER_ALLOCATOR
-uint8_t genPktData[BUFFER_SIZE];
+uint8_t genPkt[BUFFER_SIZE];
 #endif
-uint8_t *generatePacket(const uint32_t id, const void *data, size_t *size)
+uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
 {
   if(id >= definedPacketCount) {
     reportError(PERR_UNKNOWN_ID);
@@ -694,8 +701,16 @@ uint8_t *generatePacket(const uint32_t id, const void *data, size_t *size)
 
   const size_t staticLength = packetStaticSizes[id];
   const size_t dynamicLength = calculateDynamicSize(id, data);
+
+#ifdef SKIP_LEN
+  const size_t headerSize =
+      sizeof(PacketHeader) - (dynamicLength == 0 ? sizeof(packetSize_t) : 0);
+#else
+  const size_t headerSize = sizeof(PacketHeader);
+#endif
+
   const size_t datalength = staticLength + dynamicLength;
-  const size_t totalSize = datalength + header.totalLength;
+  const size_t totalSize = datalength + headerSize + MagicSize;
 
   if(totalSize > MAX_PACKET_SIZE) {
     reportError(PERR_PACKET_TOO_LARGE);
@@ -703,7 +718,7 @@ uint8_t *generatePacket(const uint32_t id, const void *data, size_t *size)
   }
 
 #ifdef MALLOC_ALLOCATOR
-  uint8_t *const genPktData = (uint8_t *)calloc(totalSize, sizeof(uint8_t));
+  uint8_t *const genPkt = (uint8_t *)calloc(totalSize, sizeof(uint8_t));
 #endif
 
 #ifdef BUFFER_ALLOCATOR
@@ -712,44 +727,44 @@ uint8_t *generatePacket(const uint32_t id, const void *data, size_t *size)
     return NULL;
   }
   for(int i = 0; i < totalSize + 1; i++)
-    genPktData[i] = 0x00;
+    genPkt[i] = 0x00;
 #endif
+  uint8_t *const dataPtr = genPkt + headerSize + MagicSize;
 
-  memcpy(genPktData, MagicBytes, MagicSize);
+  memcpy(genPkt, MagicBytes, MagicSize);
 
-  memcpy(genPktData + header.totalLength, data, staticLength);
+  memcpy(dataPtr, data, staticLength);
 
-  if(packetDynamicCount[id] != 0) {
-    generateDynamicData(id, data, staticLength, genPktData);
+  if(dynamicLength != 0) {
+    generateDynamicData(id, data, staticLength, dataPtr);
   }
 
   PacketHeader genHdr = {
-      .headerChecksum = 0x0000,
-      .length = datalength,
       .id = id,
+      .headerChecksum = 0x0000,
 #ifndef DISABLE_ACK_SEQ_CHECK
       .seqNumber = totalPacketsSent,
       .ackNumber = totalPacketsReceived,
 #endif
 #ifndef DISABLE_CRC_CHECK
-      .dataChecksum =
-          calculateDataCrc(genPktData + header.totalLength, datalength),
+      .dataChecksum = calculateDataCrc(dataPtr, datalength),
 #endif
+      .length = datalength,
   };
 
   genHdr.headerChecksum =
       calculateHeaderCrc((void *)&genHdr, sizeof(PacketHeader));
-  memcpy(genPktData + MagicSize, (void *)&genHdr, sizeof(PacketHeader));
+  memcpy(genPkt + MagicSize, (void *)&genHdr, headerSize);
 
   totalPacketsSent++;
 
   if(size != NULL) *size = totalSize;
 
 #ifdef MALLOC_ALLOCATOR
-  return genPktData;
+  return genPkt;
 #endif
 #ifdef BUFFER_ALLOCATOR
-  return &genPktData[0];
+  return &genPkt[0];
 #endif
 }
 
@@ -766,26 +781,26 @@ int isNewPacketReady()
 const size_t getPacketLength()
 {
   if(!pkt.newReady) return 0;
-  return header.u.header.length;
+  return hdr.u.hdr.length;
 }
 
 const size_t getPacketStructureSize()
 {
   if(!pkt.newReady) return 0;
-  return packetStructSizes[header.u.header.id];
+  return packetStructSizes[hdr.u.hdr.id];
 }
 
 const uint32_t getPacket(PacketHeader *rheader, void *rpacketData)
 {
   if(pkt.newReady == 0) return -1;
   if(rheader != NULL) {
-    *rheader = header.u.header;
+    *rheader = hdr.u.hdr;
   }
   if(rpacketData != NULL) {
     memcpy(rpacketData, pkt.data, pkt.requiredSize);
   }
   pkt.newReady = 0;
-  return header.u.header.id;
+  return hdr.u.hdr.id;
 }
 
 void setPacketCallback(PacketHandler handler)
@@ -813,8 +828,8 @@ void resetParsing()
   lstErrCode = 0;
 
   parsingStatus = PSTATUS_DETECT;
-  header.currentSize = 0;
-  header.magicPointer = 0;
+  hdr.size = 0;
+  hdr.magicPointer = 0;
 
   pkt.id = 0;
   pkt.currentLen = 0;

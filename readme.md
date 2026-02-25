@@ -6,6 +6,8 @@
 CONFIG DisableCrc no
 # Disable Sequence and Acknowledgment number check
 CONFIG DisableAckSeq yes
+# Skip sending packet len for known size packets
+CONFIG SkipLen yes
 # Type of allocator, use malloc or known size buffer (malloc/buffer)
 CONFIG AllocatorType malloc
 # Size of buffer allocator (only needed when buffer allocator is enabled)
@@ -131,7 +133,7 @@ Defined in include/datatypes.h
 - [x] Memory leaks when transmission error occurs while receiving a string
 - [x] String buffer of size 0
 - [x] String size in packet struct
-- [ ] Skiping length for constant size packets
+- [x] Skiping length for constant size packets
 - [ ] Choose to calculate CRC or do LUT
 
 ### Planned features

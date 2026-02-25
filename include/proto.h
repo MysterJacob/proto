@@ -29,11 +29,19 @@ typedef uint32_t packetSize_t;
 #error Packet too large!
 #endif
 
-typedef volatile struct __attribute((packed)) {
-  crcHeader_t headerChecksum;
-  packetSize_t length;
-  uint8_t id;
+#if PACKET_COUNT < 256
+typedef uint8_t packetId_t;
+#elif PACKET_COUNT < 65536
+typedef uint16_t packetId_t;
+#elif PACKET_COUNT < 4294967296
+typedef uint32_t packetId_t;
+#else
+#error Too many packets!
+#endif
 
+typedef volatile struct __attribute((packed)) {
+  packetId_t id;
+  crcHeader_t headerChecksum;
 #ifndef DISABLE_ACK_SEQ_CHECK
   uint8_t seqNumber;
   uint8_t ackNumber;
@@ -42,6 +50,7 @@ typedef volatile struct __attribute((packed)) {
 #ifndef DISABLE_CRC_CHECK
   crcData_t dataChecksum;
 #endif
+  packetSize_t length;
 } PacketHeader;
 
 typedef enum {
@@ -60,7 +69,7 @@ typedef enum {
 
 void processByte(const byte data);
 
-byte *generatePacket(const uint32_t id, const void *data, size_t *size);
+byte *generatePacket(const packetId_t id, const void *data, size_t *size);
 byte *getLastGeneratedPacket();
 
 int isNewPacketReady();

@@ -44,7 +44,10 @@ echo "$parsedConfig" | awk \
 '
 BEGIN {count = 0}
 /^DEF/{count += 1}
-END {printf "const unsigned int definedPacketCount = %s;\n", count}
+END {
+  printf "#define PACKET_COUNT %s\n", count
+  printf "const unsigned int definedPacketCount = PACKET_COUNT;\n"
+}
 ' >> $parserTables
 
 #packetStaticSizes
@@ -145,6 +148,7 @@ echo "$parsedConfig" | awk \
     else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
     else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
     else if($2 == "SaveStringSize") print "SAVE_STRING_SIZE"
+    else if($2 == "SkipLen") print "SKIP_LEN"
     else printf "\n#error Unknown config option %s\n", $2
   }
   if($2 == "HeaderCrcType") {
