@@ -27,7 +27,7 @@ CONFIG DataCrcType CRC16_XMODEM
 DEF SimplePacket Field1 INT8 Field2 STRING
 ```
 ### Compilation
-Create file named `config` with config values and run ``make``.
+Create file named `config.cfg` with config values and run ``make``.
 
 Compiled files are placed in `bin/lib`:
 - `proto.ar` static .ar packed library
@@ -134,10 +134,15 @@ Defined in include/datatypes.h
 - [x] String buffer of size 0
 - [x] String size in packet struct
 - [x] Skiping length for constant size packets
+- [ ] More tests
 - [ ] Choose to calculate CRC or do LUT
+- [ ] Final refactoring
 
 ### Planned features
 - Transferring blobs of binary data
 - zlib compression
 - packet encryption
 - Multiple crc8 sum inside of packet (segmentation)
+
+### External libs
+- CuTest (Only used for testing)

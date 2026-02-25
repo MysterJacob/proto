@@ -8,7 +8,7 @@
 
 void TestStaticGeneration(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   hardResetParser();
   TestPacket2 testPacket = {0xDD, 0xFFF, 0xCCCCCCCC, 0xAAAAAAA};
 
@@ -35,5 +35,4 @@ void TestStaticGeneration(CuTest *tc)
   free(data);
 #endif
   resetParsing();
-  puts("OK");
 }

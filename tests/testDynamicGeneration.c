@@ -8,7 +8,7 @@
 
 void TestDynamicVaruintGeneration(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   TestPacket4 tp = {
       .test1 = 0xEE, .varuint = 32 | (15 << 7) | (96 << 14), .test2 = 0xEE};
@@ -29,12 +29,11 @@ void TestDynamicVaruintGeneration(CuTest *tc)
 #ifdef MALLOC_ALLOCATOR
   free(data);
 #endif
-  puts("OK");
 }
 
 void TestDynamicVarintGeneration(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   TestPacket5 tp = {.test1 = 0xEE, .varint = -35172, .test2 = 0xEE};
   size_t size;
@@ -53,12 +52,11 @@ void TestDynamicVarintGeneration(CuTest *tc)
 #ifdef MALLOC_ALLOCATOR
   free(data);
 #endif
-  puts("OK");
 }
 
 void TestDynamicStrGeneration(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   char *message = "Hello world!";
   StringParsingTest tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
@@ -80,5 +78,4 @@ void TestDynamicStrGeneration(CuTest *tc)
 #endif
 
   CuAssertIntEquals(tc, 0, chk);
-  puts("OK");
 }

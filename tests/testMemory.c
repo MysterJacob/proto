@@ -10,7 +10,8 @@
 #define TEST_COUNT 0x2000
 void TestMemory(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+#ifdef MALLOC_ALLOCATOR
+  printf("running: %s\n", tc->name);
   resetParsing();
   char *message =
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do"
@@ -47,6 +48,5 @@ void TestMemory(CuTest *tc)
     }
 #endif
   }
-
-  puts("OK");
+#endif
 }

@@ -9,7 +9,7 @@
 
 void TestDynamicVaruintParsing(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   unsigned long long value = 0;
   for(int i = 0; i < 8 * sizeof(long long); i++) {
@@ -40,14 +40,12 @@ void TestDynamicVaruintParsing(CuTest *tc)
     free(data);
 #endif
   }
-
-  puts("OK");
 }
 
 void TestDynamicVarintParsing(CuTest *tc)
 {
   return;
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   int sign = 1;
   long long value = 0;
@@ -80,12 +78,11 @@ void TestDynamicVarintParsing(CuTest *tc)
     free(data);
 #endif
   }
-  puts("OK");
 }
 
 void TestDynamicStrParsing(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   char *message = "The quick brown fox jumps over the lazy dog";
   StringParsingTest tp = {.test1 = 0xEE, .message = message, .test2 = 0xEE};
@@ -112,13 +109,13 @@ void TestDynamicStrParsing(CuTest *tc)
   free(data);
   free(received.message);
 #endif
-  puts("OK");
+
   resetParsing();
 }
 
 void TestEmptyString(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   char *message = "";
   MultipleDynamicPacket tp = {message, 1234, 4312};
@@ -147,6 +144,4 @@ void TestEmptyString(CuTest *tc)
   free(data);
   free(received.s);
 #endif
-
-  puts("OK");
 }

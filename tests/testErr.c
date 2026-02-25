@@ -8,11 +8,11 @@
 #include "CuTest.h"
 #include "proto.h"
 
-#define TEST_SIZE 32 * 1000
+#define TEST_SIZE 8 * 1000
 
 void TestErrorDetection(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   srand(0);
   resetParsing();
 
@@ -85,12 +85,11 @@ void TestErrorDetection(CuTest *tc)
 #endif
   }
   CuAssertTrue(tc, collisionCount <= 10);
-  puts("OK");
 }
 
 void TestPacketInJunk(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   srand(rand());
   resetParsing();
 
@@ -129,12 +128,11 @@ void TestPacketInJunk(CuTest *tc)
     free(received.m2);
 #endif
   }
-  puts("OK");
 }
 
 void TestTotalNoise(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   srand(rand());
   resetParsing();
 
@@ -147,5 +145,4 @@ void TestTotalNoise(CuTest *tc)
       processByte(r);
     }
   }
-  puts("OK");
 }

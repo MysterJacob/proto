@@ -8,7 +8,7 @@ include/packets.h
 include/config.h
 python/proto.py
 gmon.out
-/config
+/config.cfg
 /debug
 **/*.o
 **/lib/

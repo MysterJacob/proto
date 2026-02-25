@@ -9,7 +9,7 @@
 
 void TestMultipleDynamic(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   char *message = "The quick brown fox jumps over the lazy dog";
   MultipleDynamicPacket tp = {.s = message, .vu = 0x1001, .vi = 0x2556};
@@ -38,6 +38,4 @@ void TestMultipleDynamic(CuTest *tc)
   free(data);
   free(received.s);
 #endif
-
-  puts("OK");
 }

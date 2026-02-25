@@ -9,7 +9,7 @@
 
 void TestTooLargePacket(CuTest *tc)
 {
-  printf("\n%s.....", tc->name);
+  printf("running: %s\n", tc->name);
   resetParsing();
   char message[8193] = "ABCDEF";
 
@@ -21,7 +21,11 @@ void TestTooLargePacket(CuTest *tc)
 
   MultipleDynamicPacket tp = {.s = message, .vu = 0x1001, .vi = 0x2556};
   size_t size;
+  #ifdef MALLOC_ALLOCATOR
   byte *data = generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
+  #else
+  generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
+  #endif
 
   const int errCode = getLastErrorCode();
   CuAssertIntEquals(tc, PERR_PACKET_TOO_LARGE, errCode);
@@ -29,6 +33,4 @@ void TestTooLargePacket(CuTest *tc)
 #ifdef MALLOC_ALLOCATOR
   free(data);
 #endif
-
-  puts("OK");
 }
