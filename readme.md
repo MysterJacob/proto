@@ -1,5 +1,12 @@
-﻿# Simple proto parser and generator
 
+
+
+﻿# proto (parser/generator)
+Used to serialize and deserialize packets for communicating between devices. Highly configurable to suit different project.
+Configuration is done via a makefile at compile time; the result is a ready to use communication protocol
+
+
+# Usage
 ### Config template
 ```
 # Disable data CRC check, header check is always enabled
@@ -136,6 +143,7 @@ Defined in include/datatypes.h
 - [x] Skiping length for constant size packets
 - [ ] More tests
 - [ ] Choose to calculate CRC or do LUT
+- [ ] Preamble change from config level
 - [ ] Final refactoring
 
 ### Planned features
