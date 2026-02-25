@@ -106,24 +106,6 @@ int main() {
 
 Run ``./pythoncreator.sh configFile proto.py output.py``
 
-`output.py` will contain python API wrapper
-
-### Data types
-Defined in include/datatypes.h
-| Type Name | Byte Size |
-| --------- | --------- |
-| int8 | 1 |
-| int16 | 2 |
-| int32 | 4 |
-| int64 | 8 |
-| uint8 | 1 |
-| uint16 | 2 |
-| uint32 | 4 |
-| uint64 | 8 |
-| varint | $\Big\lceil\frac{\log_{2}\left(x+2\right)}{7}\Big\rceil$ |
-| varuint | $\Big\lceil\frac{\log_{2}\left(x+1\right)}{7}\Big\rceil$ |
-| string | length + varuint of length |
-
 ### TODO
 - [x] Parsing static packets
 - [x] Generating static packets
@@ -151,4 +133,4 @@ Defined in include/datatypes.h
 - Multiple crc8 sum inside of packet (segmentation)
 
 ### External libs
-- CuTest (Only used for testing)
+- CuTest by Asim Jalis (Used only for testing)
