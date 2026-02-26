@@ -11,7 +11,7 @@ void TestTooLargePacket(CuTest *tc)
 {
   printf("running: %s\n", tc->name);
   resetParsing();
-  char message[8193] = "ABCDEF";
+  char message[8193] = "";
 
   int i = 0;
   for(i = 0; i < sizeof(message) - 1; i++) {
