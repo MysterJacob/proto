@@ -42,12 +42,12 @@ typedef uint32_t packetId_t;
 typedef volatile struct __attribute((packed)) {
   packetId_t id;
   crcHeader_t headerChecksum;
-#ifndef DISABLE_ACK_SEQ_CHECK
+#ifdef ACK_SEQ_CHECK
   uint8_t seqNumber;
   uint8_t ackNumber;
 #endif
 
-#ifndef DISABLE_CRC_CHECK
+#ifdef DATA_CRC_CHECK
   crcData_t dataChecksum;
 #endif
   packetSize_t length;

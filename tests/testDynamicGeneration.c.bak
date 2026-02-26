@@ -73,6 +73,7 @@ void TestDynamicStrGeneration(CuTest *tc)
   for(int i = 0; i < size - PACKET_HEADER_LENGTH; i++) {
     chk |= reference[i] ^ *(data + PACKET_HEADER_LENGTH + i);
   }
+
 #ifdef MALLOC_ALLOCATOR
   free(data);
 #endif

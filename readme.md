@@ -7,30 +7,25 @@ Configuration is done via a makefile at compile time; the result is a ready to u
 # Usage
 ### Config template
 ```
-# Disable data CRC check, header check is always enabled
-CONFIG DisableCrc no
-# Disable Sequence and Acknowledgment number check
-CONFIG DisableAckSeq yes
-# Skip sending packet len for known size packets
-CONFIG SkipLen yes
-# Type of allocator, use malloc or known size buffer (malloc/buffer)
-CONFIG AllocatorType malloc
-# Size of buffer allocator (only needed when buffer allocator is enabled)
-CONFIG BufferSize 4096
-# Size of string buffer
-CONFIG StringBufferSize 2048
-# Maximum packet size
-CONFIG MaxPacketSize 32
-# Use CRC8-Techo3250 for header
-CONFIG HeaderCrcType CRC8_TECH3250
-# Use Crc16-Xmodem for data
-CONFIG DataCrcType CRC16_XMODEM
-# Crc algorithms: CRC32_POSIX, CRC16_XMODEM, CRC16_IBM3740, CRC8_TECH3250
+CONFIG DataCrcCheck yes #Calculate packet data CRC sum (yes/no)
+CONFIG AckSeqCheck no #Check ACK/SEQ numbers (yes/no)
+CONFIG SaveStringSize no #Save string size to packet struct while parsing (yes/no)
+CONFIG SkipLen yes #Skip packet len for known size packets (yes/no)
+CONFIG AllocatorType dynamic #Select memory allocator (dynamic/buffer)
+CONFIG MaxPacketSize 128 #Maximal packet size
+CONFIG DataBufferSize 128 #Buffer size (buffer allocator)
+CONFIG StringBufferSize 128 #Buffer size for string (buffer allocator)
+CONFIG HeaderCrcAlgo CRC16_XMODEM #Crc algorithm type for header checksum
+CONFIG DataCrcType CRC16_XMODEM # Crc alogrithm type for data checksum
 
 # Define packet with name <SimplePacket> 
 # and two fields <Field1> and <Field2> with types INT8 and STRING (char*)
 DEF SimplePacket Field1 INT8 Field2 STRING
+
+# Types of data supported by proto
+# INT8, INT16, INT32, INT64, VARINT, UINT8, UINT16, UINT32, UINT64, VARUINT, STRING
 ```
+
 ### Compilation
 Create file named `config.cfg` with config values and run ``make``.
 

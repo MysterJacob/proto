@@ -46,7 +46,6 @@ BEGIN {count = 0}
 /^DEF/{count += 1}
 END {
   printf "#define PACKET_COUNT %s\n", count
-  printf "const unsigned int definedPacketCount = PACKET_COUNT;\n"
 }
 ' >> $parserTables
 
@@ -141,30 +140,71 @@ printf "} %s;\n", $2
 echo -e "/*\nWARNING!!!\nThis file is generated automatically during build process!\n*/" > $configh
 echo "$parsedConfig" | awk \
 '
+BEGIN{
+CONFIG_V["DataCrcCheck"]["value"] = "yes";
+CONFIG_V["DataCrcCheck"]["match"] = "[yes|no]";
+CONFIG_V["DataCrcCheck"]["name"] = "DATA_CRC_CHECK";
+
+CONFIG_V["AckSeqCheck"]["value"] = "no";
+CONFIG_V["AckSeqCheck"]["match"] = "[yes|no]";
+CONFIG_V["AckSeqCheck"]["name"] = "ACK_SEQ_CHECK";
+
+CONFIG_V["SaveStringSize"]["value"] = "no";
+CONFIG_V["SaveStringSize"]["match"] = "[yes|no]";
+CONFIG_V["SaveStringSize"]["name"] = "SAVE_STRING_SIZE";
+
+CONFIG_V["SkipLen"]["value"] = "yes";
+CONFIG_V["SkipLen"]["match"] = "[yes|no]";
+CONFIG_V["SkipLen"]["name"] = "SKIP_PACKET_LEN";
+
+CONFIG_V["AllocatorType"]["value"] = "dynamic";
+CONFIG_V["AllocatorType"]["match"] = "[dynamic|buffer]";
+CONFIG_V["AllocatorType"]["name"] = "ALLOCATOR_TYPE";
+
+CONFIG_V["MaxPacketSize"]["value"] = "128";
+CONFIG_V["MaxPacketSize"]["match"] = "[0-9]+";
+CONFIG_V["MaxPacketSize"]["name"] = "MAX_PACKET_SIZE";
+
+CONFIG_V["DataBufferSize"]["value"] = "128";
+CONFIG_V["DataBufferSize"]["match"] = "[0-9]+";
+CONFIG_V["DataBufferSize"]["name"] = "DATA_BUFFER_SIZE";
+
+CONFIG_V["StringBufferSize"]["value"] = "32";
+CONFIG_V["StringBufferSize"]["match"] = "[0-9]+";
+CONFIG_V["StringBufferSize"]["name"] = "STRING_BUFFER_SIZE";
+
+CONFIG_V["HeaderCrcAlgo"]["value"] = "CRC16_XMODEM";
+CONFIG_V["HeaderCrcAlgo"]["match"] = ".*";
+CONFIG_V["HeaderCrcAlgo"]["name"] = "HEADER_CRC_ALGO";
+
+CONFIG_V["DataCrcType"]["value"] = "CRC16_XMODEM";
+CONFIG_V["DataCrcType"]["match"] = ".*";
+CONFIG_V["DataCrcType"]["name"] = "DATA_CRC_ALGO";
+
+}
+
 /^CONFIG/{
-  if(tolower($3) == "yes") {
-    printf "#define "
-    if($2 == "DisableCrc") print "DISABLE_CRC_CHECK"
-    else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
-    else if($2 == "DisableAckSeq") print "DISABLE_ACK_SEQ_CHECK"
-    else if($2 == "SaveStringSize") print "SAVE_STRING_SIZE"
-    else if($2 == "SkipLen") print "SKIP_LEN"
-    else printf "\n#error Unknown config option %s\n", $2
-  }
-  if($2 == "HeaderCrcType") {
-    printf "#define HEADER_CRC_ALGO %s\n", $3
-  }else if($2 == "DataCrcType") {
-    printf "#define DATA_CRC_ALGO %s\n", $3
-  }else if($2 == "AllocatorType") {
-    if(tolower($3) == "malloc") print "#define MALLOC_ALLOCATOR"
-    else if(tolower($3) == "buffer") print "#define BUFFER_ALLOCATOR"
-  }else if($2 == "BufferSize") {
-    printf "#define BUFFER_SIZE %s\n", $3
-  }else if($2 == "MaxPacketSize") {
-    printf "#define MAX_PACKET_SIZE %s\n", $3
-  }else if($2 == "StringBufferSize") {
-    printf "#define STRING_BUFFER_SIZE %s\n", $3
+  if(!($2 in CONFIG_V)) {
+    printf "#error Unknown config option %s\n", $2;
   }else{
+    if(match($3, CONFIG_V[$2]["match"]) != 1) {
+      printf "#error Unknown value %s for field %s\n", $3, $2;
+    }else{
+      CONFIG_V[$2]["value"] = $3;
+    }
+  }
+}
+
+END {
+  for (configField in CONFIG_V){
+    if(configField == "AllocatorType"){
+      if(CONFIG_V[configField]["value"] == "dynamic") print "#define MALLOC_ALLOCATOR";
+      if(CONFIG_V[configField]["value"] == "buffer") print "#define BUFFER_ALLOCATOR";
+    }else{
+      if(CONFIG_V[configField]["value"] == "no") {continue;}
+      else if(CONFIG_V[configField]["value"] == "yes") {printf "#define %s\n", CONFIG_V[configField]["name"];}
+      else {printf "#define %s %s\n", CONFIG_V[configField]["name"], CONFIG_V[configField]["value"]}
+    }
   }
 }
 ' >> $configh

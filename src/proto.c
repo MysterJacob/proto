@@ -37,13 +37,13 @@ struct {
   // FIX
   size_t currentSize;
   size_t currentLen;
-#ifndef DISABLE_CRC_CHECK
+#ifdef DATA_CRC_CHECK
   crcData_t crc;
 #endif
   const datatype *dynamicFieldPointer;
   uint8_t *writer;
 #ifdef BUFFER_ALLOCATOR
-  uint8_t data[BUFFER_SIZE];
+  uint8_t data[DATA_BUFFER_SIZE];
 #endif
 #ifdef MALLOC_ALLOCATOR
   void *data;
@@ -79,7 +79,7 @@ void allocateMemoryForPacketData()
   pkt.writer = (uint8_t *)pkt.data;
 #endif
 #ifdef BUFFER_ALLOCATOR
-  for(int i = 0; i < BUFFER_SIZE; i++)
+  for(int i = 0; i < DATA_BUFFER_SIZE; i++)
     pkt.data[i] = 0;
   pkt.writer = &pkt.data[0];
 #endif
@@ -96,7 +96,7 @@ void freeLastPacket()
   pkt.data = 0;
 #endif
 #ifdef BUFFER_ALLOCATOR
-  for(int i = 0; i < BUFFER_SIZE; i++)
+  for(int i = 0; i < DATA_BUFFER_SIZE; i++)
     pkt.data[i] = 0;
 #endif
 
@@ -116,7 +116,7 @@ void writeBuffer(const uint8_t *data, size_t size)
     return;
   }
 #ifdef BUFFER_ALLOCATOR
-  if(pkt.currentSize + size > BUFFER_SIZE) {
+  if(pkt.currentSize + size > DATA_BUFFER_SIZE) {
     reportError(PERR_BUFFER_OVERFLOW);
     return;
   }
@@ -133,7 +133,7 @@ void writeByte(const uint8_t data)
     return;
   }
 #ifdef BUFFER_ALLOCATOR
-  if(pkt.currentSize >= BUFFER_SIZE) {
+  if(pkt.currentSize >= DATA_BUFFER_SIZE) {
     reportError(PERR_BUFFER_OVERFLOW);
     return;
   }
@@ -169,7 +169,7 @@ void restartParser()
   resetDynamicParsers();
   parsingStatus = PSTATUS_DETECT;
   pkt.id = 0;
-#ifndef DISABLE_CRC_CHECK
+#ifdef DATA_CRC_CHECK
   resetDataCrc(&pkt.crc);
 #endif
   pkt.dynamicFieldPointer = 0;
@@ -183,18 +183,18 @@ void finishRecieiving()
     return;
   }
 
-#ifndef DISABLE_CRC_CHECK
+#ifdef DATA_CRC_CHECK
   if(getDataCrc(pkt.crc) != hdr.u.hdr.dataChecksum) {
     reportError(PERR_DATA_CRC_MISMATCH);
     return;
   }
 #endif
 
-#ifndef DISABLE_ACK_SEQ_CHECK
-  if(header.u.header.seqNumber != totalPacketsReceived) {
+#ifdef ACK_SEQ_CHECK
+  if(hdr.u.hdr.seqNumber != totalPacketsReceived) {
     reportError(PERR_SEQ_MISMATCH);
   }
-  if(header.u.header.ackNumber != totalPacketsSent) {
+  if(hdr.u.hdr.ackNumber != totalPacketsSent) {
     reportError(PERR_ACK_MISMATCH);
   }
 #endif
@@ -224,7 +224,7 @@ void finishHeaderParsing()
   }
 
   pkt.id = hdr.u.hdr.id;
-  if(pkt.id >= definedPacketCount) {
+  if(pkt.id >= PACKET_COUNT) {
     reportError(PERR_UNKNOWN_ID);
     return;
   }
@@ -514,7 +514,7 @@ void processByte(const uint8_t data)
 
       break;
     case PSTATUS_STATICDATA:
-#ifndef DISABLE_CRC_CHECK
+#ifdef DATA_CRC_CHECK
       updateDataCrc(&pkt.crc, data);
 #endif
       writeByte(data);
@@ -527,7 +527,7 @@ void processByte(const uint8_t data)
 
       break;
     case PSTATUS_DYNAMICDATA:
-#ifndef DISABLE_CRC_CHECK
+#ifdef DATA_CRC_CHECK
       updateDataCrc(&pkt.crc, data);
 #endif
       processDynamicData(data);
@@ -690,11 +690,11 @@ void generateDynamicData(const uint32_t id, const void *data,
 }
 
 #ifdef BUFFER_ALLOCATOR
-uint8_t genPkt[BUFFER_SIZE];
+uint8_t genPkt[DATA_BUFFER_SIZE];
 #endif
 uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
 {
-  if(id >= definedPacketCount) {
+  if(id >= PACKET_COUNT) {
     reportError(PERR_UNKNOWN_ID);
     return 0;
   }
@@ -722,7 +722,7 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
 #endif
 
 #ifdef BUFFER_ALLOCATOR
-  if(totalSize > BUFFER_SIZE) {
+  if(totalSize > DATA_BUFFER_SIZE) {
     reportError(PERR_BUFFER_OVERFLOW);
     return NULL;
   }
@@ -742,11 +742,11 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
   PacketHeader genHdr = {
       .id = id,
       .headerChecksum = 0x0000,
-#ifndef DISABLE_ACK_SEQ_CHECK
+#ifdef ACK_SEQ_CHECK
       .seqNumber = totalPacketsSent,
       .ackNumber = totalPacketsReceived,
 #endif
-#ifndef DISABLE_CRC_CHECK
+#ifdef DATA_CRC_CHECK
       .dataChecksum = calculateDataCrc(dataPtr, datalength),
 #endif
       .length = datalength,
@@ -836,7 +836,7 @@ void resetParsing()
   pkt.currentSize = 0;
   pkt.dynamicFieldPointer = 0;
   pkt.requiredSize = 0;
-#ifndef DISABLE_CRC_CHECK
+#ifdef DATA_CRC_CHECK
   resetDataCrc(&pkt.crc);
 #endif
 

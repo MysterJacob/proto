@@ -30,6 +30,7 @@ AR_FILE = $(LIB_DIR)proto.ar
 TARGET_HEADER = $(LIB_DIR)proto.h
 PYTHON_FILE = $(LIB_DIR)proto.py
 
+.FORCE:
 default: $(CONFIG) $(SO_FILE)
 all: $(SO_FILE) $(PYTHON_FILE)
 
@@ -50,7 +51,7 @@ $(SO_FILE): $(BUILD_DIR) $(CONFIG) $(OBJ_FILES)
 	$(CC) $(COMPILE_FLAGS) -shared -o $(LIB_DIR)libproto.so $(OBJ_FILES)
 	ar rvs $(AR_FILE) $(OBJ_FILES)
 
-$(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG)
+$(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG) $(INCLUDE_DIR)config.h
 	$(CC) $(COMPILE_FLAGS) -I$(INCLUDE_DIR) -c -fPIC $< -o $@
 
 $(TEST_DIR)%.o: $(TEST_CONFIG_DIR)%.cfg $(TEST_SOURCES)
@@ -90,6 +91,9 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f debug
 	rm -f gmon.out
+	rm include/config.h
+	rm include/packets.h
+	rm include/parserTables.h
 
 debug: testcfg $(TEST_FILE)
 	cp $(TEST_FILE) debug
