@@ -12,6 +12,7 @@
 
 void TestErrorDetection(CuTest *tc)
 {
+#if PREAMBLE_SIZE != 0
   printf("running: %s\n", tc->name);
   srand(0);
   resetParsing();
@@ -56,14 +57,14 @@ void TestErrorDetection(CuTest *tc)
 
     for(int j = 0; j < 0x1000; j++) {
       byte r = rand() % 0xFF;
-      if(r == MAGIC_BYTES[0]) r = 0x00;
+      if(r == (PREAMBLE_BYTES & 0xFF)) r = 0x00;
       processByte(r);
     }
 
     const int v = rand() % 15;
     for(int j = 0; j < size; j++) {
       byte noise = 0x00;
-      if((j + v) % 15 == 0 && j > MAGIC_SIZE) noise = rand() % 0xFE + 1;
+      if((j + v) % 15 == 0 && j > PREAMBLE_SIZE) noise = rand() % 0xFE + 1;
       processByte(data[j] ^ noise);
     }
 
@@ -85,10 +86,12 @@ void TestErrorDetection(CuTest *tc)
 #endif
   }
   CuAssertTrue(tc, collisionCount <= 10);
+#endif
 }
 
 void TestPacketInJunk(CuTest *tc)
 {
+#if PREAMBLE_SIZE != 0
   printf("running: %s\n", tc->name);
   srand(rand());
   resetParsing();
@@ -104,7 +107,7 @@ void TestPacketInJunk(CuTest *tc)
 
     for(int j = 0; j < 0x1000; j++) {
       byte r = rand() % 0xFF;
-      if(r == MAGIC_BYTES[0]) r = 0x00;
+      if(r == (PREAMBLE_BYTES & 0xFF)) r = 0x00;
       processByte(r);
     }
 
@@ -128,21 +131,26 @@ void TestPacketInJunk(CuTest *tc)
     free(received.m2);
 #endif
   }
+#endif
 }
 
 void TestTotalNoise(CuTest *tc)
 {
+#if PREAMBLE_SIZE != 0
   printf("running: %s\n", tc->name);
   srand(rand());
   resetParsing();
 
   for(int i = 0; i < TEST_SIZE; i++) {
-    for(size_t i = 0; i < MAGIC_SIZE; i++) {
-      processByte(MAGIC_BYTES[i]);
+#if PREAMBLE_SIZE != 0
+    for(size_t i = 0; i < PREAMBLE_SIZE; i++) {
+      processByte((PREAMBLE_BYTES << 8 * i) & 0xFF);
     }
+#endif
     for(int j = 0; j < 0x1000; j++) {
       byte r = rand() % 0xFF;
       processByte(r);
     }
   }
+#endif
 }

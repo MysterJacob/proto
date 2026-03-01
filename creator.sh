@@ -181,6 +181,9 @@ CONFIG_V["DataCrcType"]["value"] = "CRC16_XMODEM";
 CONFIG_V["DataCrcType"]["match"] = ".*";
 CONFIG_V["DataCrcType"]["name"] = "DATA_CRC_ALGO";
 
+CONFIG_V["PreambleBytes"]["value"] = "0x575FDE";
+CONFIG_V["PreambleBytes"]["match"] = "0x[0-9ABCDEF]+";
+
 }
 
 /^CONFIG/{
@@ -194,17 +197,25 @@ CONFIG_V["DataCrcType"]["name"] = "DATA_CRC_ALGO";
     }
   }
 }
-
+function printAllocatorType(){
+  if(CONFIG_V["AllocatorType"]["value"] == "dynamic") print "#define MALLOC_ALLOCATOR";
+  if(CONFIG_V["AllocatorType"]["value"] == "buffer") print "#define BUFFER_ALLOCATOR";
+}
+function printPreamble(){
+  if(CONFIG_V["PreambleBytes"]["value"] == "0x0"){
+    printf "#define PREAMBLE_SIZE %s\n", 0;
+  }else{
+    printf "#define PREAMBLE_BYTES %s\n", CONFIG_V["PreambleBytes"]["value"];
+    printf "#define PREAMBLE_SIZE %s\n", int((length(CONFIG_V["PreambleBytes"]["value"])-2)/2 + 0.5);
+  }
+}
 END {
   for (configField in CONFIG_V){
-    if(configField == "AllocatorType"){
-      if(CONFIG_V[configField]["value"] == "dynamic") print "#define MALLOC_ALLOCATOR";
-      if(CONFIG_V[configField]["value"] == "buffer") print "#define BUFFER_ALLOCATOR";
-    }else{
-      if(CONFIG_V[configField]["value"] == "no") {continue;}
-      else if(CONFIG_V[configField]["value"] == "yes") {printf "#define %s\n", CONFIG_V[configField]["name"];}
-      else {printf "#define %s %s\n", CONFIG_V[configField]["name"], CONFIG_V[configField]["value"]}
-    }
+    if(configField == "AllocatorType"){ printAllocatorType();}
+    else if(configField == "PreambleBytes"){ printPreamble();}
+    else if(CONFIG_V[configField]["value"] == "no") {continue;}
+    else if(CONFIG_V[configField]["value"] == "yes") {printf "#define %s\n", CONFIG_V[configField]["name"];}
+    else {printf "#define %s %s\n", CONFIG_V[configField]["name"], CONFIG_V[configField]["value"]}
   }
 }
 ' >> $configh

@@ -16,8 +16,6 @@ extern "C" {
 #endif
 
 extern const datatype *const parserTable[];
-const size_t MagicSize = MAGIC_SIZE;
-const uint8_t *MagicBytes = (uint8_t *)MAGIC_BYTES;
 
 protoErrorCode lstErrCode = 0;
 
@@ -27,7 +25,7 @@ struct {
     uint8_t data[sizeof(PacketHeader)];
   } u;
   size_t size;
-  size_t magicPointer;
+  size_t preamblePointer;
 } hdr = {{}, 0, 0};
 
 struct {
@@ -157,17 +155,28 @@ static inline void parseHeaderData(const uint8_t data)
 }
 
 enum {
+#if PREAMBLE_SIZE != 0
   PSTATUS_DETECT = 0,
+#endif
   PSTATUS_HEADER = 2,
   PSTATUS_STATICDATA = 3,
   PSTATUS_DYNAMICDATA = 4,
+#if PREAMBLE_SIZE == 0
+} parsingStatus = PSTATUS_HEADER;
+#else
 } parsingStatus = PSTATUS_DETECT;
+#endif
 
 void resetDynamicParsers();
 void restartParser()
 {
   resetDynamicParsers();
+#if PREAMBLE_SIZE == 0
+  parsingStatus = PSTATUS_HEADER;
+#else
+
   parsingStatus = PSTATUS_DETECT;
+#endif
   pkt.id = 0;
 #ifdef DATA_CRC_CHECK
   resetDataCrc(&pkt.crc);
@@ -485,27 +494,31 @@ void processDynamicData(const uint8_t data)
   }
 }
 
-void incrementMagicPointer(uint8_t data)
+#if PREAMBLE_SIZE != 0
+void incrementPreamblePointer(uint8_t data)
 {
-  if((MagicBytes[hdr.magicPointer] ^ data) == 0x0)
-    hdr.magicPointer++;
-  else if((MagicBytes[0] ^ data) == 0x0)
-    hdr.magicPointer = 1;
+  if((((PREAMBLE_BYTES >> 8 * hdr.preamblePointer) ^ data) & 0xFF) == 0x0)
+    hdr.preamblePointer++;
+  else if(((PREAMBLE_BYTES & 0xFF) ^ data) == 0x0)
+    hdr.preamblePointer = 1;
   else
-    hdr.magicPointer = 0;
+    hdr.preamblePointer = 0;
 }
+#endif
 
 void processByte(const uint8_t data)
 {
   switch(parsingStatus) {
+#if PREAMBLE_SIZE != 0
     case PSTATUS_DETECT:
-      incrementMagicPointer(data);
-      if(hdr.magicPointer >= MagicSize) {
+      incrementPreamblePointer(data);
+      if(hdr.preamblePointer >= PREAMBLE_SIZE) {
         freeLastPacket();
-        hdr.magicPointer = 0;
+        hdr.preamblePointer = 0;
         parsingStatus = PSTATUS_HEADER;
       }
       break;
+#endif
     case PSTATUS_HEADER:
       parseHeaderData(data);
       if(hdr.size == sizeof(PacketHeader)) {
@@ -710,7 +723,7 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
 #endif
 
   const size_t datalength = staticLength + dynamicLength;
-  const size_t totalSize = datalength + headerSize + MagicSize;
+  const size_t totalSize = datalength + headerSize + PREAMBLE_SIZE;
 
   if(totalSize > MAX_PACKET_SIZE) {
     reportError(PERR_PACKET_TOO_LARGE);
@@ -729,9 +742,15 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
   for(int i = 0; i < totalSize + 1; i++)
     genPkt[i] = 0x00;
 #endif
-  uint8_t *const dataPtr = genPkt + headerSize + MagicSize;
+  uint8_t *const dataPtr = genPkt + headerSize + PREAMBLE_SIZE;
 
-  memcpy(genPkt, MagicBytes, MagicSize);
+#if PREAMBLE_SIZE != 0
+  for(int i = 0; i < PREAMBLE_SIZE; i++) {
+    genPkt[i] = (PREAMBLE_BYTES >> (8 * i)) & 0xFF;
+  }
+#endif
+
+  //   memcpy(genPkt, PREAMBLE_BYTES, PREAMBLE_SIZE);
 
   memcpy(dataPtr, data, staticLength);
 
@@ -754,7 +773,7 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
 
   genHdr.headerChecksum =
       calculateHeaderCrc((void *)&genHdr, sizeof(PacketHeader));
-  memcpy(genPkt + MagicSize, (void *)&genHdr, headerSize);
+  memcpy(genPkt + PREAMBLE_SIZE, (void *)&genHdr, headerSize);
 
   totalPacketsSent++;
 
@@ -800,7 +819,9 @@ const uint32_t getPacket(PacketHeader *rheader, void *rpacketData)
     memcpy(rpacketData, pkt.data, pkt.requiredSize);
   }
   pkt.newReady = 0;
-  return hdr.u.hdr.id;
+  packetId_t id = hdr.u.hdr.id;
+  freeLastPacket();
+  return id;
 }
 
 void setPacketCallback(PacketHandler handler)
@@ -827,9 +848,14 @@ void resetParsing()
 
   lstErrCode = 0;
 
+#if PREAMBLE_SIZE == 0
+  parsingStatus = PSTATUS_HEADER;
+#else
   parsingStatus = PSTATUS_DETECT;
+#endif
+
   hdr.size = 0;
-  hdr.magicPointer = 0;
+  hdr.preamblePointer = 0;
 
   pkt.id = 0;
   pkt.currentLen = 0;

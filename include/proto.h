@@ -14,9 +14,7 @@ extern "C" {
 #include "packets.h"
 
 typedef uint8_t byte;
-#define MAGIC_BYTES "\x57\x5F\xDE"
-#define MAGIC_SIZE sizeof(MAGIC_BYTES) - 1
-#define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + MAGIC_SIZE)
+#define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + PREAMBLE_SIZE)
 
 #include "crc.h"
 #if MAX_PACKET_SIZE < 256

@@ -17,6 +17,7 @@ CONFIG DataBufferSize 128 #Buffer size (buffer allocator)
 CONFIG StringBufferSize 128 #Buffer size for string (buffer allocator)
 CONFIG HeaderCrcAlgo CRC16_XMODEM #Crc algorithm type for header checksum
 CONFIG DataCrcType CRC16_XMODEM # Crc alogrithm type for data checksum
+CONFIG PreambleBytes 0x575FDE # Preamble bytes (0x0 to disable; default 0x575FDE)
 
 # Define packet with name <SimplePacket> 
 # and two fields <Field1> and <Field2> with types INT8 and STRING (char*)
