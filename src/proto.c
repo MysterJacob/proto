@@ -32,7 +32,6 @@ struct {
   uint8_t newReady;
   packetId_t id;
   size_t requiredSize;
-  // FIX
   size_t currentSize;
   size_t currentLen;
 #ifdef DATA_CRC_CHECK
@@ -143,9 +142,9 @@ void writeByte(const uint8_t data)
 static inline void parseHeaderData(const uint8_t data)
 {
   hdr.u.data[hdr.size++] = data;
-#ifdef SKIP_LEN
-  if(hdr.size == sizeof(PacketHeader) - sizeof(packetSize_t) &&
-     hdr.u.hdr.id <= definedPacketCount &&
+#ifdef SKIP_PACKET_LEN
+  if(hdr.size == sizeof(PacketHeader) - sizeof(packetLen_t) &&
+     hdr.u.hdr.id <= PACKET_COUNT &&
      packetDynamicCount[hdr.u.hdr.id] == 0) {
     hdr.u.hdr.length = packetStaticSizes[hdr.u.hdr.id];
     hdr.size = sizeof(PacketHeader);
@@ -715,9 +714,9 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
   const size_t staticLength = packetStaticSizes[id];
   const size_t dynamicLength = calculateDynamicSize(id, data);
 
-#ifdef SKIP_LEN
+#ifdef SKIP_PACKET_LEN
   const size_t headerSize =
-      sizeof(PacketHeader) - (dynamicLength == 0 ? sizeof(packetSize_t) : 0);
+      sizeof(PacketHeader) - (dynamicLength == 0 ? sizeof(packetLen_t) : 0);
 #else
   const size_t headerSize = sizeof(PacketHeader);
 #endif

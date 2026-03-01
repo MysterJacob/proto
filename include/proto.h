@@ -18,11 +18,11 @@ typedef uint8_t byte;
 
 #include "crc.h"
 #if MAX_PACKET_SIZE < 256
-typedef uint8_t packetSize_t;
+typedef uint8_t packetLen_t;
 #elif MAX_PACKET_SIZE < 65536
-typedef uint16_t packetSize_t;
+typedef uint16_t packetLen_t;
 #elif MAX_PACKET_SIZE < 4294967296
-typedef uint32_t packetSize_t;
+typedef uint32_t packetLen_t;
 #else
 #error Packet too large!
 #endif
@@ -48,7 +48,7 @@ typedef volatile struct __attribute((packed)) {
 #ifdef DATA_CRC_CHECK
   crcData_t dataChecksum;
 #endif
-  packetSize_t length;
+  packetLen_t length;
 } PacketHeader;
 
 typedef enum {

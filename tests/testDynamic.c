@@ -7,7 +7,7 @@
 #include "CuTest.h"
 #include "proto.h"
 
-void TestDynamicVaruintParsing(CuTest *tc)
+void TestDynamicVaruint(CuTest *tc)
 {
   printf("running: %s\n", tc->name);
   resetParsing();
@@ -42,7 +42,7 @@ void TestDynamicVaruintParsing(CuTest *tc)
   }
 }
 
-void TestDynamicVarintParsing(CuTest *tc)
+void TestDynamicVarint(CuTest *tc)
 {
   return;
   printf("running: %s\n", tc->name);
@@ -80,7 +80,7 @@ void TestDynamicVarintParsing(CuTest *tc)
   }
 }
 
-void TestDynamicStrParsing(CuTest *tc)
+void TestDynamicStr(CuTest *tc)
 {
   printf("running: %s\n", tc->name);
   resetParsing();

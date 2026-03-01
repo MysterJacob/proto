@@ -95,8 +95,8 @@ clean:
 	rm include/packets.h
 	rm include/parserTables.h
 
-debug: $(TEST_DIR)nopreamble.o
-	cp $(TEST_DIR)nopreamble.o debug
+debug: $(TEST_DIR)nolenskip.o
+	cp $(TEST_DIR)nolenskip.o debug
 
 profile:
 	gprof ./bin/test/test.o gmon.out
