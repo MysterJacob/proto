@@ -587,7 +587,7 @@ const size_t calculateDynamicSize(const uint32_t id, const void *data)
   }
 
   size_t totalSize = 0;
-  const void *dataPointer = data;
+  const uint8_t *dataPointer = data;
   dataPointer += packetStaticSizes[id];
 
   const datatype *dynamicFieldType = &parserTable[id][packetStaticCount[id]];
@@ -624,7 +624,7 @@ const size_t calculateDynamicSize(const uint32_t id, const void *data)
 
 const size_t generateVaruint(VARUINT varuint, uint8_t *packetData)
 {
-  const char mask = 0b10000000;
+  const uint8_t mask = 0b10000000;
   size_t size = 0;
   do {
     packetData[size++] = mask | (varuint & 0x7F);
@@ -663,7 +663,7 @@ const size_t generateString(const char *str, uint8_t *packetData,
   return len + varuintSize;
 }
 
-void generateDynamicData(const uint32_t id, const void *data,
+void generateDynamicData(const uint32_t id, const uint8_t *data,
                          const size_t staticLength, uint8_t *dataPtr)
 {
   const uint8_t *pktDynData = data + staticLength;

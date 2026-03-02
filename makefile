@@ -4,8 +4,8 @@ CC ?= gcc
 CONFIG ?= config.cfg
 CONFIG_DIR = $(dir, $(CONFIG))
 
-COMPILE_FLAGS = -Wall -Os
-DEBUG_FLAGS = -Wall -g3 -pg
+COMPILE_FLAGS = -Wall -Os -pedantic --std=c2x
+DEBUG_FLAGS = -Wall -g3 -pg -pedantic --std=c2x
 
 INCLUDE_DIR = include/
 BUILD_DIR = bin/
