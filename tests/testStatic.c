@@ -10,9 +10,8 @@ void TestEmptyPacket(CuTest *tc)
 {
   printf("running: %s\n", tc->name);
   hardResetParser();
-  TestPacket0 pkt = {};
   size_t size;
-  byte *data = generatePacket(TestPacket0_ID, (void *)&pkt, &size);
+  byte *data = generatePacket(TestPacket0_ID, 0, &size);
   for(int i = 0; i < size; i++) {
     processByte(data[i]);
   }
@@ -21,9 +20,8 @@ void TestEmptyPacket(CuTest *tc)
   }
   CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertTrue(tc, isNewPacketReady() != 0);
-  TestPacket0 received = {};
   PacketHeader header;
-  getPacket(&header, (void *)&received);
+  getPacket(&header, 0);
 
   CuAssertIntEquals(tc, TestPacket0_ID, header.id);
   CuAssertIntEquals(tc, 0, header.length);

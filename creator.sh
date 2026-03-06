@@ -94,7 +94,7 @@ END {print "0x00};"}
 echo "$parsedConfig" | awk -v regex=$DYNAMIC_TYPE_REGEX \
 '
 BEGIN{c=0; printf "const size_t packetStructSizes[] = {"}
-/^DEF/{printf "sizeof(%s), ", $2}
+/^DEF/{if(NF > 2) {printf "sizeof(%s), ", $2}else{printf "0, "}}
 END {print "0x00};"}
 ' >> $parserTables
 
@@ -124,15 +124,17 @@ END{print "};"}
 echo "$parsedConfig" | awk -v regex="$DYNAMIC_TYPE_REGEX" \
 '
 /^DEF/{
-printf "\ntypedef const volatile struct __attribute__((packed)) {\n"
-for(i=3;i<NF;i+=2) if(!($(i + 1) ~ regex)){ printf "\t%s %s;\n", $(i + 1), $i }
-for(i=3;i<NF;i+=2){
-  if(($(i + 1) ~ regex)){
-    printf "\t%s %s;\n", $(i + 1), $i, $i
+if(NF > 2){
+  printf "\ntypedef const volatile struct __attribute__((packed)) {\n"
+  for(i=3;i<NF;i+=2) if(!($(i + 1) ~ regex)){ printf "\t%s %s;\n", $(i + 1), $i }
+  for(i=3;i<NF;i+=2){
+    if(($(i + 1) ~ regex)){
+      printf "\t%s %s;\n", $(i + 1), $i, $i
+    }
+    if(($(i + 1) == "STRING")){ printf "#ifdef SAVE_STRING_SIZE\nsize_t %s_len;\n#endif\n", $i }
   }
-  if(($(i + 1) == "STRING")){ printf "#ifdef SAVE_STRING_SIZE\nsize_t %s_len;\n#endif\n", $i }
+  printf "} %s;\n", $2
 }
-printf "} %s;\n", $2
 }
 ' >> $packetsh
 
