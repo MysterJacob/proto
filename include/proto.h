@@ -71,9 +71,9 @@ byte *generatePacket(const packetId_t id, const void *data, size_t *size);
 byte *getLastGeneratedPacket();
 
 int isNewPacketReady();
-const size_t getPacketLength();
-const size_t getPacketStructureSize();
-const uint32_t getPacket(PacketHeader *header, void *packetData);
+size_t getPacketLength();
+size_t getPacketStructureSize();
+uint32_t getPacket(PacketHeader *header, void *packetData);
 
 typedef void (*PacketHandler)(const PacketHeader header, void *packetData);
 void setPacketCallback(PacketHandler handler);

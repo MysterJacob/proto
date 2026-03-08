@@ -45,14 +45,22 @@ struct {
 #ifdef MALLOC_ALLOCATOR
   void *data;
 #endif
-} pkt = {0, 0, 0, 0, 0, 0, 0};
+} pkt = {0, 0, 0, 0, 0,
+#ifdef DATA_CRC_CHECK
+         0,
+#endif
+         0, 0,
+#ifdef MALLOC_ALLOCATOR
+         0
+#endif
+};
 
 PacketHandler pktPrsCallback = NULL;
 ErrorHandler errCallback = NULL;
 
 uint32_t totalPacketsSent = 0;
 uint32_t totalPacketsReceived = 0;
-const protoErrorCode reportError(const protoErrorCode code)
+protoErrorCode reportError(const protoErrorCode code)
 {
   resetParsing();
   lstErrCode = code;
@@ -102,7 +110,7 @@ void freeLastPacket()
   pkt.currentSize = 0;
   pkt.requiredSize = 0;
 
-  for(int i = 0; i < sizeof(PacketHeader); i++) {
+  for(size_t i = 0; i < sizeof(PacketHeader); i++) {
     hdr.u.data[i] = 0x00;
   }
 }
@@ -119,7 +127,7 @@ void writeBuffer(const uint8_t *data, size_t size)
   }
 #endif
   pkt.currentSize += size;
-  for(int i = 0; i < size; i++) {
+  for(size_t i = 0; i < size; i++) {
     *(pkt.writer++) = *data++;
   }
 }
@@ -144,8 +152,7 @@ static inline void parseHeaderData(const uint8_t data)
   hdr.u.data[hdr.size++] = data;
 #ifdef SKIP_PACKET_LEN
   if(hdr.size == sizeof(PacketHeader) - sizeof(packetLen_t) &&
-     hdr.u.hdr.id <= PACKET_COUNT &&
-     packetDynamicCount[hdr.u.hdr.id] == 0) {
+     hdr.u.hdr.id <= PACKET_COUNT && packetDynamicCount[hdr.u.hdr.id] == 0) {
     hdr.u.hdr.length = packetStaticSizes[hdr.u.hdr.id];
     hdr.size = sizeof(PacketHeader);
     return;
@@ -273,7 +280,7 @@ struct {
   size_t size;
   VARUINT value;
 } vuinPrsData = {0, 0};
-const size_t getVaruint(const uint8_t data, VARUINT *out)
+size_t getVaruint(const uint8_t data, VARUINT *out)
 {
   const VARUINT value = data & 0x7F;
   const int marker = data & 0x80;
@@ -292,7 +299,7 @@ const size_t getVaruint(const uint8_t data, VARUINT *out)
   return 0;
 }
 
-const size_t parseVaruint(const uint8_t data)
+size_t parseVaruint(const uint8_t data)
 {
   union {
     VARUINT value;
@@ -316,8 +323,8 @@ struct {
     VARINT value;
     uint8_t buffer[sizeof(VARINT)];
   } u;
-} vinPrsData = {1, 0};
-const size_t parseVarint(const uint8_t data)
+} vinPrsData = {1, 0, {0}};
+size_t parseVarint(const uint8_t data)
 {
   const int valueBits = data & 0x7F;
   const int markerBit = (data & 0x80) >> 7;
@@ -362,8 +369,15 @@ struct {
   size_t stringBufferStart;
   char stringBuffer[STRING_BUFFER_SIZE];
 #endif
-} strPrsData = {0, 0};
-const size_t parseString(const uint8_t data)
+} strPrsData = {0,   0, 0, {0},
+#ifdef MALLOC_ALLOCATOR
+                {0},
+#endif
+#if defined(BUFFER_ALLOCATOR) && STRING_BUFFER_SIZE != 0
+                0
+#endif
+};
+size_t parseString(const uint8_t data)
 {
   if(strPrsData.requiredLen == 0) {
     if(getVaruint(data, &strPrsData.requiredLen) == 0) {
@@ -401,7 +415,7 @@ const size_t parseString(const uint8_t data)
   strPrsData.u.string[strPrsData.len++] = 0x0;
 
 #ifdef MALLOC_ALLOCATOR
-  for(int i = 0; i < sizeof(STRING); i++) {
+  for(size_t i = 0; i < sizeof(STRING); i++) {
     strPrsData.u.string[strPrsData.len + i] = strPrsData.last.buffer[i];
   }
 #endif
@@ -555,11 +569,11 @@ void processByte(const uint8_t data)
   }
 }
 
-const size_t calculateVaruintSize(const VARUINT data)
+size_t calculateVaruintSize(const VARUINT data)
 {
   size_t size = 0;
   VARINT mask = 0x7F;
-  int i = 0;
+  size_t i = 0;
   do {
     size++;
     mask <<= 7;
@@ -567,7 +581,7 @@ const size_t calculateVaruintSize(const VARUINT data)
   return size;
 }
 
-const size_t calculateVarintSize(const VARINT data)
+size_t calculateVarintSize(const VARINT data)
 {
   VARINT value = data;
   if(value < 0) {
@@ -580,7 +594,7 @@ const size_t calculateVarintSize(const VARINT data)
   return size;
 }
 
-const size_t calculateDynamicSize(const uint32_t id, const void *data)
+size_t calculateDynamicSize(const uint32_t id, const void *data)
 {
   if(packetDynamicCount[id] == 0) {
     return 0;
@@ -592,7 +606,7 @@ const size_t calculateDynamicSize(const uint32_t id, const void *data)
 
   const datatype *dynamicFieldType = &parserTable[id][packetStaticCount[id]];
 
-  for(int i = 0; i < packetDynamicCount[id]; i++) {
+  for(size_t i = 0; i < packetDynamicCount[id]; i++) {
     switch(*dynamicFieldType++) {
       case TYPE_VARUINT: {
         totalSize += calculateVaruintSize(*(VARUINT *)dataPointer);
@@ -622,7 +636,7 @@ const size_t calculateDynamicSize(const uint32_t id, const void *data)
   return totalSize;
 }
 
-const size_t generateVaruint(VARUINT varuint, uint8_t *packetData)
+size_t generateVaruint(VARUINT varuint, uint8_t *packetData)
 {
   const uint8_t mask = 0b10000000;
   size_t size = 0;
@@ -634,7 +648,7 @@ const size_t generateVaruint(VARUINT varuint, uint8_t *packetData)
   return size;
 }
 
-const size_t generateVarint(VARINT varint, uint8_t *packetData)
+size_t generateVarint(VARINT varint, uint8_t *packetData)
 {
   uint8_t signbit = 0x0;
   if(varint < 0) {
@@ -652,8 +666,7 @@ const size_t generateVarint(VARINT varint, uint8_t *packetData)
   return size;
 }
 
-const size_t generateString(const char *str, uint8_t *packetData,
-                            size_t *strLen)
+size_t generateString(const char *str, uint8_t *packetData, size_t *strLen)
 {
   size_t len = strlen(str);
   *strLen = len;
@@ -672,7 +685,7 @@ void generateDynamicData(const uint32_t id, const uint8_t *data,
 
   size_t datasize = 0;
 
-  for(int i = 0; i < packetDynamicCount[id]; i++) {
+  for(size_t i = 0; i < packetDynamicCount[id]; i++) {
     switch(*genDynFieldType++) {
       case TYPE_VARUINT: {
         datasize = generateVaruint(*(VARUINT *)pktDynData, dynDataWriter);
@@ -796,19 +809,19 @@ int isNewPacketReady()
   return pkt.newReady;
 }
 
-const size_t getPacketLength()
+size_t getPacketLength()
 {
   if(!pkt.newReady) return 0;
   return hdr.u.hdr.length;
 }
 
-const size_t getPacketStructureSize()
+size_t getPacketStructureSize()
 {
   if(!pkt.newReady) return 0;
   return packetStructSizes[hdr.u.hdr.id];
 }
 
-const uint32_t getPacket(PacketHeader *rheader, void *rpacketData)
+uint32_t getPacket(PacketHeader *rheader, void *rpacketData)
 {
   if(pkt.newReady == 0) return -1;
   if(rheader != NULL) {

@@ -4,8 +4,8 @@ CC ?= gcc
 CONFIG ?= config.cfg
 CONFIG_DIR = $(dir, $(CONFIG))
 
-COMPILE_FLAGS = -Wall -Os -pedantic --std=c2x
-DEBUG_FLAGS = -Wall -g3 -pg -pedantic --std=c2x
+COMPILE_FLAGS = -Wall -Wextra -Os -pedantic --std=c2x
+DEBUG_FLAGS = -Wall -Wextra -g3 -pg -pedantic --std=c2x
 
 INCLUDE_DIR = include/
 BUILD_DIR = bin/
@@ -42,7 +42,7 @@ $(BUILD_DIR):
 
 .FORCE:
 $(CONFIG_DIR)%.cfg $(TEST_CONFIG_DIR)%.cfg: $(BUILD_DIR)
-	./creator.sh $@ $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
+	@./creator.sh $@ $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
 	@gcc -I$(INCLUDE_DIR) -nostdlib -DHEADER_COMPILATION -E include/proto.h -o $(TARGET_HEADER)
 	@awk -i inplace -F" " 'BEGINFILE{print "#define CONFIG_NAME $@\n#include <stdint.h>\n#include <stddef.h>"} /^[^#]/{print $0}' $(TARGET_HEADER)
