@@ -91,12 +91,12 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f debug
 	rm -f gmon.out
-	rm include/config.h
-	rm include/packets.h
-	rm include/parserTables.h
+	rm -f include/config.h include/packets.h include/parserTables.h
 
-debug: $(TEST_DIR)nolenskip.o
-	cp $(TEST_DIR)nolenskip.o debug
+.PHONY:
+debug: $(TEST_DIR)debug.o
+	cp $(TEST_DIR)debug.o debug
 
+.PHONY:
 profile:
 	gprof ./bin/test/test.o gmon.out

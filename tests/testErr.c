@@ -51,18 +51,18 @@ void TestErrorDetection(CuTest *tc)
   size_t size;
 
   int collisionCount = 0;
-  for(int i = 0; i < TEST_SIZE; i++) {
+  for(size_t i = 0; i < TEST_SIZE; i++) {
     byte *data = generatePacket(ErrorTestPacket_ID, (void *)&tp, &size);
     CuAssertTrue(tc, data != 0);
 
-    for(int j = 0; j < 0x1000; j++) {
+    for(size_t j = 0; j < 0x1000; j++) {
       byte r = rand() % 0xFF;
       if(r == (PREAMBLE_BYTES & 0xFF)) r = 0x00;
       processByte(r);
     }
 
     const int v = rand() % 15;
-    for(int j = 0; j < size; j++) {
+    for(size_t j = 0; j < size; j++) {
       byte noise = 0x00;
       if((j + v) % 15 == 0 && j > PREAMBLE_SIZE) noise = rand() % 0xFE + 1;
       processByte(data[j] ^ noise);
@@ -101,17 +101,17 @@ void TestPacketInJunk(CuTest *tc)
       .test1 = 0xEE, .m1 = message, .m2 = message, .test2 = 0xEE};
   size_t size;
 
-  for(int i = 0; i < TEST_SIZE; i++) {
+  for(size_t i = 0; i < TEST_SIZE; i++) {
     byte *data = generatePacket(ErrorTestPacket_ID, (void *)&tp, &size);
     CuAssertTrue(tc, data != 0);
 
-    for(int j = 0; j < 0x1000; j++) {
+    for(size_t j = 0; j < 0x1000; j++) {
       byte r = rand() % 0xFF;
       if(r == (PREAMBLE_BYTES & 0xFF)) r = 0x00;
       processByte(r);
     }
 
-    for(int j = 0; j < size; j++) {
+    for(size_t j = 0; j < size; j++) {
       processByte(data[j]);
     }
 
@@ -141,13 +141,13 @@ void TestTotalNoise(CuTest *tc)
   srand(rand());
   resetParsing();
 
-  for(int i = 0; i < TEST_SIZE; i++) {
+  for(size_t i = 0; i < TEST_SIZE; i++) {
 #if PREAMBLE_SIZE != 0
     for(size_t i = 0; i < PREAMBLE_SIZE; i++) {
       processByte((PREAMBLE_BYTES << 8 * i) & 0xFF);
     }
 #endif
-    for(int j = 0; j < 0x1000; j++) {
+    for(size_t j = 0; j < 0x1000; j++) {
       byte r = rand() % 0xFF;
       processByte(r);
     }

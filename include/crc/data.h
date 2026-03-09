@@ -16,8 +16,10 @@ const struct {
   const crcData_t init;
   const crcData_t poly;
   const crcData_t xor ;
-} crcData = {CRC_INIT, CRC_POLY, CRC_XOR};
-const crcData_t *table;
+  const uint8_t indexShift;
+  const uint8_t dataShift;
+} crcData = {CRC_INIT, CRC_POLY, CRC_XOR, CRC_INDEX_SHIFT, CRC_DATA_SHIFT};
+
 const crcData_t crcDataTable[] = CRC_TABLE;
 #endif
 
@@ -27,16 +29,9 @@ const crcData_t crcDataTable[] = CRC_TABLE;
 #undef CRC_XOR
 #undef CRC_ALGO
 #undef CRC_TABLE
+#undef CRC_DATA_SHIFT
+#undef CRC_INDEX_SHIFT
 
-#ifdef CRC_REFIN
-#define CRC_DATA_REFIN
-#undef CRC_REFIN
-#endif
-
-#ifdef CRC_REFOUT
-#define CRC_DATA_REFOUT
-#undef CRC_REFOUT
-#endif
 #undef CRC_ALGO
 
 #endif

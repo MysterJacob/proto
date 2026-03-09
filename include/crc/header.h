@@ -6,8 +6,8 @@ typedef CRC_DTYPE crcHeader_t;
 
 #ifndef HEADER_COMPILATION
 crcHeader_t calculateHeaderCrc(uint8_t *buffer, size_t size);
-void updateHeaderCrc(crcHeader_t *crc, uint8_t data);
-crcHeader_t getHeaderCrc(crcHeader_t crc);
+// void updateHeaderCrc(crcHeader_t *crc, uint8_t data);
+// crcHeader_t getHeaderCrc(crcHeader_t crc);
 void resetHeaderCrc(crcHeader_t *crc);
 #endif
 
@@ -16,7 +16,9 @@ const struct {
   const crcHeader_t init;
   const crcHeader_t poly;
   const crcHeader_t xor ;
-} crcHeader = {CRC_INIT, CRC_POLY, CRC_XOR};
+  const uint8_t indexShift;
+  const uint8_t dataShift;
+} crcHeader = {CRC_INIT, CRC_POLY, CRC_XOR, CRC_INDEX_SHIFT, CRC_DATA_SHIFT};
 
 const crcHeader_t crcHeaderTable[] = CRC_TABLE;
 #endif
@@ -27,16 +29,8 @@ const crcHeader_t crcHeaderTable[] = CRC_TABLE;
 #undef CRC_XOR
 #undef CRC_ALGO
 #undef CRC_TABLE
-
-#ifdef CRC_REFIN
-#define CRC_HEADER_REFIN
-#undef CRC_REFIN
-#endif
-
-#ifdef CRC_REFOUT
-#define CRC_HEADER_REFOUT
-#undef CRC_REFOUT
-#endif
+#undef CRC_DATA_SHIFT
+#undef CRC_INDEX_SHIFT
 #undef CRC_ALGO
 #else
 #error Header crc type not defined

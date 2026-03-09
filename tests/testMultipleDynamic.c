@@ -17,7 +17,7 @@ void TestMultipleDynamic(CuTest *tc)
   byte *data = generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
   CuAssertTrue(tc, data != 0);
 
-  for(int i = 0; i < size; i++) {
+  for(size_t i = 0; i < size; i++) {
     processByte(*(data + i));
   }
 

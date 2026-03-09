@@ -2,8 +2,8 @@
 #define CRC_INIT 0xFF
 #define CRC_POLY 0x1D
 #define CRC_XOR 0x00
-#define CRC_REFIN
-#define CRC_REFOUT
+#define CRC_INDEX_SHIFT 0
+#define CRC_DATA_SHIFT 8
 
 #define CRC_TABLE                                                             \
   {                                                                           \

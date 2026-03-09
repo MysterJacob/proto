@@ -1,4 +1,5 @@
 #include "proto.h"
+#include <stdbool.h>
 
 #include <stddef.h>
 #include <stdint.h>
@@ -45,13 +46,17 @@ struct {
 #ifdef MALLOC_ALLOCATOR
   void *data;
 #endif
-} pkt = {0, 0, 0, 0, 0,
+} pkt = {
+    0,   0, 0, 0, 0,
 #ifdef DATA_CRC_CHECK
-         0,
+    0,
 #endif
-         0, 0,
+    0,   0,
+#ifdef BUFFER_ALLOCATOR
+    {0},
+#endif
 #ifdef MALLOC_ALLOCATOR
-         0
+    0,
 #endif
 };
 
@@ -374,7 +379,7 @@ struct {
                 {0},
 #endif
 #if defined(BUFFER_ALLOCATOR) && STRING_BUFFER_SIZE != 0
-                0
+                0, {0}
 #endif
 };
 size_t parseString(const uint8_t data)
@@ -751,7 +756,7 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
     reportError(PERR_BUFFER_OVERFLOW);
     return NULL;
   }
-  for(int i = 0; i < totalSize + 1; i++)
+  for(size_t i = 0; i < totalSize + 1; i++)
     genPkt[i] = 0x00;
 #endif
   uint8_t *const dataPtr = genPkt + headerSize + PREAMBLE_SIZE;

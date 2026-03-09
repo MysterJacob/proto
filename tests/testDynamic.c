@@ -12,7 +12,7 @@ void TestDynamicVaruint(CuTest *tc)
   printf("running: %s\n", tc->name);
   resetParsing();
   unsigned long long value = 0;
-  for(int i = 0; i < 8 * sizeof(long long); i++) {
+  for(size_t i = 0; i < 8 * sizeof(long long); i++) {
     TestPacket4 tp = {.test1 = 0xFF - i, .varuint = value, .test2 = i};
 
     size_t size;
@@ -20,7 +20,7 @@ void TestDynamicVaruint(CuTest *tc)
     CuAssertTrue(tc, data != 0);
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-    for(int j = 0; j < size; j++) {
+    for(size_t j = 0; j < size; j++) {
       processByte(*(data + j));
     }
     const int errCode = getLastErrorCode();
@@ -49,7 +49,7 @@ void TestDynamicVarint(CuTest *tc)
   resetParsing();
   int sign = 1;
   long long value = 0;
-  for(int i = 0; i < 16 * sizeof(long long) - 2; i++) {
+  for(size_t i = 0; i < 16 * sizeof(long long) - 2; i++) {
     TestPacket5 tp = {.test1 = 0xFF - i, .varint = value * sign, .test2 = i};
 
     size_t size;
@@ -57,7 +57,7 @@ void TestDynamicVarint(CuTest *tc)
     CuAssertTrue(tc, data != 0);
     CuAssertIntEquals(tc, 0, getLastErrorCode());
 
-    for(int j = 0; j < size; j++) {
+    for(size_t j = 0; j < size; j++) {
       processByte(*(data + j));
     }
     const int errCode = getLastErrorCode();
@@ -90,7 +90,7 @@ void TestDynamicStr(CuTest *tc)
   byte *data = generatePacket(StringParsingTest_ID, (void *)&tp, &size);
   CuAssertTrue(tc, data != 0);
 
-  for(int i = 0; i < size; i++) {
+  for(size_t i = 0; i < size; i++) {
     processByte(*(data + i));
   }
 
@@ -118,12 +118,16 @@ void TestEmptyString(CuTest *tc)
   printf("running: %s\n", tc->name);
   resetParsing();
   char *message = "";
-  MultipleDynamicPacket tp = {message, 1234, 4312};
+#ifdef SAVE_STRING_SIZE
+  MultipleDynamicPacket tp = {message, 0, 1234, 4312};
+#else
+  MultipleDynamicPacket tp = {message, 0, 1234, 4312};
+#endif
   size_t size;
   byte *data = generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
   CuAssertTrue(tc, data != 0);
 
-  for(int i = 0; i < size; i++) {
+  for(size_t i = 0; i < size; i++) {
     processByte(*(data + i));
   }
 

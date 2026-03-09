@@ -2,6 +2,8 @@
 #define CRC_INIT 0x00000000
 #define CRC_POLY 0x04C11DB7
 #define CRC_XOR 0xFFFFFFFF
+#define CRC_INDEX_SHIFT 24
+#define CRC_DATA_SHIFT 8
 
 #define CRC_TABLE                                                          \
   {0x00000000, 0x04C11DB7, 0x09823B6E, 0x0D4326D9, 0x130476DC, 0x17C56B6B, \

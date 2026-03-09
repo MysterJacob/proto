@@ -12,10 +12,10 @@ void TestEmptyPacket(CuTest *tc)
   hardResetParser();
   size_t size;
   byte *data = generatePacket(TestPacket0_ID, 0, &size);
-  for(int i = 0; i < size; i++) {
+  for(size_t i = 0; i < size; i++) {
     processByte(data[i]);
   }
-  for(int i = 0; i < size; i++) {
+  for(size_t i = 0; i < size; i++) {
     processByte(data[i]);
   }
   CuAssertIntEquals(tc, 0, getLastErrorCode());
@@ -35,7 +35,7 @@ void TestStatic(CuTest *tc)
   printf("running: %s\n", tc->name);
   hardResetParser();
   srand(0xCAFEBAAE);
-  for(int j = 0; j < 0x1000; j++) {
+  for(size_t j = 0; j < 0x1000; j++) {
     TestPacket2 testPacket = {rand() & 0xFF, rand() & 0xFFFF,
                               rand() & 0xFFFFFFFF, rand() & 0xFFFFFFF};
 
@@ -43,7 +43,7 @@ void TestStatic(CuTest *tc)
 
     byte *data = generatePacket(TestPacket2_ID, (void *)&testPacket, &size);
     CuAssertTrue(tc, data != 0);
-    for(int i = 0; i < size; i++) {
+    for(size_t i = 0; i < size; i++) {
       processByte(data[i]);
     }
     CuAssertIntEquals(tc, 0, getLastErrorCode());

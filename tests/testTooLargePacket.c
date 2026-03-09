@@ -13,7 +13,7 @@ void TestTooLargePacket(CuTest *tc)
   resetParsing();
   char message[8193] = "";
 
-  int i = 0;
+  size_t i = 0;
   for(i = 0; i < sizeof(message) - 1; i++) {
     message[i] = 'a';
   }
