@@ -23,6 +23,10 @@ const struct {
 const crcData_t crcDataTable[] = CRC_TABLE;
 #endif
 
+#if CRC_DATA_SHIFT == 0
+#define CRC_DATA_SHIFT_SKIP
+#endif
+
 #undef CRC_DTYPE
 #undef CRC_INIT
 #undef CRC_POLY

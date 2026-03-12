@@ -23,6 +23,10 @@ const struct {
 const crcHeader_t crcHeaderTable[] = CRC_TABLE;
 #endif
 
+#if CRC_DATA_SHIFT == 0
+#define CRC_HEADER_SHIFT_SKIP
+#endif
+
 #undef CRC_DTYPE
 #undef CRC_INIT
 #undef CRC_POLY
@@ -32,6 +36,8 @@ const crcHeader_t crcHeaderTable[] = CRC_TABLE;
 #undef CRC_DATA_SHIFT
 #undef CRC_INDEX_SHIFT
 #undef CRC_ALGO
+
+
 #else
 #error Header crc type not defined
 #endif
