@@ -118,8 +118,8 @@ Run ``./pythoncreator.sh configFile proto.py output.py``
 - [x] String size in packet struct
 - [x] Skiping length for constant size packets
 - [x] Preamble change from config level
+- [ ] Joint crc for short packets
 - [ ] Refactor crc
-- [ ] Choose to calculate CRC or do LUT
 - [ ] Final refactoring
 
 ### Planned features

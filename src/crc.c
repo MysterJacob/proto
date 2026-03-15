@@ -23,7 +23,7 @@ crcData_t calculateDataCrc(uint8_t *buffer, size_t size)
 void updateDataCrc(crcData_t *crc, uint8_t data)
 {
 #ifdef CRC_DATA_SHIFT_SKIP
-  *crc = crcDataTable[crc ^ data];
+  *crc = crcDataTable[*crc ^ data];
 #else
   *crc = (*crc << crcData.dataShift) ^
          crcDataTable[((*crc >> crcData.indexShift) ^ data) & 0xff];
@@ -38,7 +38,7 @@ void resetDataCrc(crcData_t *crc)
   *crc = crcData.init;
 }
 #endif
-
+#if HEADER_CRC_ALGO != DATA_CRC_ALGO
 crcHeader_t calculateHeaderCrc(uint8_t *buffer, size_t size)
 {
   crcHeader_t crc = crcHeader.init;
@@ -53,16 +53,8 @@ crcHeader_t calculateHeaderCrc(uint8_t *buffer, size_t size)
 
   return crc ^ crcHeader.xor;
 }
-// void updateHeaderCrc(crcHeader_t *crc, uint8_t data)
-// {
-//   *crc = (*crc << crcHeader.dataShift) ^
-//          crcHeaderTable[((*crc >> crcHeader.indexShift) ^ data) & 0xff];
-// }
-// crcHeader_t getHeaderCrc(crcHeader_t crc)
-// {
-//   return crc ^ crcHeader.xor;
-// }
 void resetHeaderCrc(crcHeader_t *crc)
 {
   *crc = crcHeader.init;
 }
+#endif

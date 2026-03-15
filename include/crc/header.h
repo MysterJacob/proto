@@ -5,11 +5,10 @@
 typedef CRC_DTYPE crcHeader_t;
 
 #ifndef HEADER_COMPILATION
+#if HEADER_CRC_ALGO != DATA_CRC_ALGO
+
 crcHeader_t calculateHeaderCrc(uint8_t *buffer, size_t size);
-// void updateHeaderCrc(crcHeader_t *crc, uint8_t data);
-// crcHeader_t getHeaderCrc(crcHeader_t crc);
 void resetHeaderCrc(crcHeader_t *crc);
-#endif
 
 #ifdef CRC_DEFINE_META
 const struct {
@@ -22,6 +21,14 @@ const struct {
 
 const crcHeader_t crcHeaderTable[] = CRC_TABLE;
 #endif
+
+#else
+#define calculateHeaderCrc calculateDataCrc
+#define resetHeaderCrc resetDataCrc
+#endif
+
+#endif
+
 
 #if CRC_DATA_SHIFT == 0
 #define CRC_HEADER_SHIFT_SKIP
@@ -36,7 +43,6 @@ const crcHeader_t crcHeaderTable[] = CRC_TABLE;
 #undef CRC_DATA_SHIFT
 #undef CRC_INDEX_SHIFT
 #undef CRC_ALGO
-
 
 #else
 #error Header crc type not defined
