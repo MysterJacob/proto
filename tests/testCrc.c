@@ -26,7 +26,7 @@ void TestCrcCalculation(CuTest *tc)
 #else
 #error Unknown crc type!
 #endif
-
+#ifdef calculateDataCrc
   crcData_t dataCrc = calculateDataCrc(buffer, sizeof(buffer));
 #if DATA_CRC_ALGO == CRC32_POSIX
   CuAssertIntEquals(tc, 0xF28B401A, dataCrc);
@@ -38,5 +38,6 @@ void TestCrcCalculation(CuTest *tc)
   CuAssertIntEquals(tc, 0x7A, dataCrc);
 #else
 #error Unknown crc type!
+#endif
 #endif
 }

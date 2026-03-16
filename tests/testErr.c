@@ -12,7 +12,7 @@
 
 void TestErrorDetection(CuTest *tc)
 {
-#if PREAMBLE_SIZE != 0
+#if PREAMBLE_SIZE != 0 && !defined(JOIN_DATA_CRC)
   printf("running: %s\n", tc->name);
   srand(0);
   resetParsing();

@@ -5,7 +5,7 @@
 #define CRC_DEFINE_META
 #include "crc.h"
 
-#ifndef DISABLE_CRC_CHECK
+#if defined(DATA_CRC_CHECK)
 crcData_t calculateDataCrc(uint8_t *buffer, size_t size)
 {
   crcData_t crc = crcData.init;
@@ -38,7 +38,7 @@ void resetDataCrc(crcData_t *crc)
   *crc = crcData.init;
 }
 #endif
-#if HEADER_CRC_ALGO != DATA_CRC_ALGO
+#if HEADER_CRC_ALGO != DATA_CRC_ALGO || defined(JOIN_DATA_CRC)
 crcHeader_t calculateHeaderCrc(uint8_t *buffer, size_t size)
 {
   crcHeader_t crc = crcHeader.init;
@@ -53,6 +53,17 @@ crcHeader_t calculateHeaderCrc(uint8_t *buffer, size_t size)
 
   return crc ^ crcHeader.xor;
 }
+#if defined(JOIN_DATA_CRC)
+void updateHeaderCrc(crcHeader_t *crc, uint8_t data)
+{
+  *crc = (*crc << crcHeader.dataShift) ^
+         crcHeaderTable[((*crc >> crcHeader.indexShift) ^ data) & 0xff];
+}
+crcHeader_t getHeaderCrc(crcHeader_t crc)
+{
+  return crc ^ crcHeader.xor;
+}
+#endif
 void resetHeaderCrc(crcHeader_t *crc)
 {
   *crc = crcHeader.init;

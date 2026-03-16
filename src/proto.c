@@ -1,6 +1,6 @@
 #include "proto.h"
-#include <stdbool.h>
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -35,7 +35,7 @@ struct {
   size_t requiredSize;
   size_t currentSize;
   size_t currentLen;
-#ifdef DATA_CRC_CHECK
+#if defined(DATA_CRC_CHECK) || defined(JOIN_DATA_CRC)
   crcData_t crc;
 #endif
   const datatype *dynamicFieldPointer;
@@ -48,7 +48,7 @@ struct {
 #endif
 } pkt = {
     0,   0, 0, 0, 0,
-#ifdef DATA_CRC_CHECK
+#if defined(DATA_CRC_CHECK) || defined(JOIN_DATA_CRC)
     0,
 #endif
     0,   0,
@@ -189,8 +189,11 @@ void restartParser()
   parsingStatus = PSTATUS_DETECT;
 #endif
   pkt.id = 0;
-#ifdef DATA_CRC_CHECK
+#if defined(DATA_CRC_CHECK)
   resetDataCrc(&pkt.crc);
+#endif
+#if defined(JOIN_DATA_CRC)
+  resetHeaderCrc(&pkt.crc);
 #endif
   pkt.dynamicFieldPointer = 0;
 }
@@ -232,16 +235,25 @@ const datatype *getFirstDynamicField()
 
 void finishHeaderParsing()
 {
-  const uint16_t prsHdrCrc = hdr.u.hdr.headerChecksum;
+  const crcHeader_t prsHdrCrc = hdr.u.hdr.headerChecksum;
   hdr.u.hdr.headerChecksum = 0x0000;
-  const uint16_t calculatedHdrCrc =
+#if defined(JOIN_DATA_CRC)
+  resetHeaderCrc(&pkt.crc);
+  for(size_t i = 0; i < sizeof(PacketHeader); i++) {
+    updateHeaderCrc(&pkt.crc, hdr.u.data[i]);
+  }
+#else
+  const crcHeader_t calculatedHdrCrc =
       calculateHeaderCrc(hdr.u.data, sizeof(PacketHeader));
+#endif
   hdr.u.hdr.headerChecksum = prsHdrCrc;
 
+#if !defined(JOIN_DATA_CRC)
   if(calculatedHdrCrc != prsHdrCrc) {
     reportError(PERR_HDR_CRC_MISMATCH);
     return;
   }
+#endif
 
   pkt.id = hdr.u.hdr.id;
   if(pkt.id >= PACKET_COUNT) {
@@ -374,12 +386,12 @@ struct {
   size_t stringBufferStart;
   char stringBuffer[STRING_BUFFER_SIZE];
 #endif
-} strPrsData = {0,   0, 0, {0},
+} strPrsData = {0,   0,  0, {0},
 #ifdef MALLOC_ALLOCATOR
                 {0},
 #endif
 #if defined(BUFFER_ALLOCATOR) && STRING_BUFFER_SIZE != 0
-                0, {0}
+                0,   {0}
 #endif
 };
 size_t parseString(const uint8_t data)
@@ -548,6 +560,9 @@ void processByte(const uint8_t data)
 #ifdef DATA_CRC_CHECK
       updateDataCrc(&pkt.crc, data);
 #endif
+#if defined(JOIN_DATA_CRC)
+      updateHeaderCrc(&pkt.crc, data);
+#endif
       writeByte(data);
       if(lstErrCode) return;
       pkt.currentLen++;
@@ -560,6 +575,9 @@ void processByte(const uint8_t data)
     case PSTATUS_DYNAMICDATA:
 #ifdef DATA_CRC_CHECK
       updateDataCrc(&pkt.crc, data);
+#endif
+#if defined(JOIN_DATA_CRC)
+      updateHeaderCrc(&pkt.crc, data);
 #endif
       processDynamicData(data);
 
@@ -788,8 +806,22 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
       .length = datalength,
   };
 
+#if defined(JOIN_DATA_CRC)
+  resetHeaderCrc((crcHeader_t *)&genHdr.headerChecksum);
+  uint8_t *crcPointer = (uint8_t *)&genHdr;
+
+  for(size_t i = 0; i < headerSize; i++) {
+    updateHeaderCrc((crcHeader_t *)&genHdr.headerChecksum, *crcPointer++);
+  }
+
+  for(size_t i = 0; i < datalength; i++) {
+    updateHeaderCrc((crcHeader_t *)&genHdr.headerChecksum, dataPtr[i]);
+  }
+#else
   genHdr.headerChecksum =
       calculateHeaderCrc((void *)&genHdr, sizeof(PacketHeader));
+#endif
+
   memcpy(genPkt + PREAMBLE_SIZE, (void *)&genHdr, headerSize);
 
   totalPacketsSent++;

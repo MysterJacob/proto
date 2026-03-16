@@ -45,7 +45,7 @@ typedef volatile struct __attribute((packed)) {
   uint8_t ackNumber;
 #endif
 
-#ifdef DATA_CRC_CHECK
+#if defined(DATA_CRC_CHECK)
   crcData_t dataChecksum;
 #endif
   packetLen_t length;

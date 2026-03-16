@@ -1,4 +1,4 @@
-#if defined(DATA_CRC_ALGO) && !defined(DISABLE_CRC_CHECK)
+#if defined(DATA_CRC_ALGO) && defined(DATA_CRC_CHECK)
 #define CRC_ALGO DATA_CRC_ALGO
 
 #include "crc/tables.h"

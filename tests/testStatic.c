@@ -15,9 +15,6 @@ void TestEmptyPacket(CuTest *tc)
   for(size_t i = 0; i < size; i++) {
     processByte(data[i]);
   }
-  for(size_t i = 0; i < size; i++) {
-    processByte(data[i]);
-  }
   CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertTrue(tc, isNewPacketReady() != 0);
   PacketHeader header;

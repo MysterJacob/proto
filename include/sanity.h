@@ -1,8 +1,4 @@
-#ifdef DISABLE_ACK_SEQ_CHECK
-#warning Ack and Seq validation disabled!
-#endif
-
-#ifdef DISABLE_CRC_CHECK
+#if !defined(DATA_CRC_CHECK) && defined(JOIN_DATA_CRC)
 #warning Data checksum validation disabled!
 #endif
 
@@ -22,3 +18,8 @@
 #if defined(BUFFER_ALLOCATOR) && MAX_PACKET_SIZE > DATA_BUFFER_SIZE
 #error Buffer size is smaller than maximum packet size
 #endif
+
+#if defined(DATA_CRC_CHECK) && defined(JOIN_DATA_CRC)
+#error Can not calculate data crc and join crc with header
+#endif
+

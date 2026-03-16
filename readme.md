@@ -7,7 +7,7 @@ Configuration is done via a makefile at compile time; the result is a ready to u
 # Usage
 ### Config template
 ```
-CONFIG DataCrcCheck yes #Calculate packet data CRC sum (yes/no)
+CONFIG DataCrcCheck yes #Calculate packet data CRC sum (yes/no/join), if join is specified the CRC will be calculated for whole message
 CONFIG AckSeqCheck no #Check ACK/SEQ numbers (yes/no)
 CONFIG SaveStringSize no #Save string size to packet struct while parsing (yes/no)
 CONFIG SkipLen yes #Skip packet len for known size packets (yes/no)
@@ -118,8 +118,7 @@ Run ``./pythoncreator.sh configFile proto.py output.py``
 - [x] String size in packet struct
 - [x] Skiping length for constant size packets
 - [x] Preamble change from config level
-- [ ] Joint crc for short packets
-- [ ] Refactor crc
+- [x] Joint crc for short packets
 - [ ] Final refactoring
 
 ### Planned features

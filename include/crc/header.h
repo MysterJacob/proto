@@ -5,11 +5,17 @@
 typedef CRC_DTYPE crcHeader_t;
 
 #ifndef HEADER_COMPILATION
-#if HEADER_CRC_ALGO != DATA_CRC_ALGO
+#ifdef JOIN_DATA_CRC
+typedef CRC_DTYPE crcData_t;
+#endif
+#if HEADER_CRC_ALGO != DATA_CRC_ALGO || defined(JOIN_DATA_CRC)
 
 crcHeader_t calculateHeaderCrc(uint8_t *buffer, size_t size);
 void resetHeaderCrc(crcHeader_t *crc);
-
+#if defined(JOIN_DATA_CRC)
+void updateHeaderCrc(crcHeader_t *crc, uint8_t data);
+crcHeader_t getHeaderCrc(crcHeader_t crc);
+#endif
 #ifdef CRC_DEFINE_META
 const struct {
   const crcHeader_t init;
@@ -28,7 +34,6 @@ const crcHeader_t crcHeaderTable[] = CRC_TABLE;
 #endif
 
 #endif
-
 
 #if CRC_DATA_SHIFT == 0
 #define CRC_HEADER_SHIFT_SKIP

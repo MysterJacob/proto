@@ -144,7 +144,7 @@ echo "$parsedConfig" | awk \
 '
 BEGIN{
 CONFIG_V["DataCrcCheck"]["value"] = "yes";
-CONFIG_V["DataCrcCheck"]["match"] = "[yes|no]";
+CONFIG_V["DataCrcCheck"]["match"] = "[yes|no|join]";
 CONFIG_V["DataCrcCheck"]["name"] = "DATA_CRC_CHECK";
 
 CONFIG_V["AckSeqCheck"]["value"] = "no";
@@ -211,10 +211,20 @@ function printPreamble(){
     printf "#define PREAMBLE_SIZE %s\n", int((length(CONFIG_V["PreambleBytes"]["value"])-2)/2 + 0.5);
   }
 }
+function dataCrcCheck(){
+  value = CONFIG_V["DataCrcCheck"]["value"];
+
+  if(value == "join"){
+    print "#define JOIN_DATA_CRC";
+  }else if (value == "yes"){
+    printf "#define %s\n", CONFIG_V["DataCrcCheck"]["name"];
+  }
+}
 END {
   for (configField in CONFIG_V){
     if(configField == "AllocatorType"){ printAllocatorType();}
     else if(configField == "PreambleBytes"){ printPreamble();}
+    else if(configField == "DataCrcCheck"){ dataCrcCheck();}
     else if(CONFIG_V[configField]["value"] == "no") {continue;}
     else if(CONFIG_V[configField]["value"] == "yes") {printf "#define %s\n", CONFIG_V[configField]["name"];}
     else {printf "#define %s %s\n", CONFIG_V[configField]["name"], CONFIG_V[configField]["value"]}

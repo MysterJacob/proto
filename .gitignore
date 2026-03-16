@@ -12,4 +12,4 @@ gmon.out
 /debug
 **/*.o
 **/lib/
-./tests/configs/debug.cfg
+/tests/configs/debug.cfg
