@@ -10,7 +10,7 @@
 #define TEST_COUNT 0x2000
 void TestMemory(CuTest *tc)
 {
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
   printf("running: %s\n", tc->name);
   resetParsing();
   char *message =
@@ -40,7 +40,7 @@ void TestMemory(CuTest *tc)
     MemoryTestPacket received = {};
     PacketHeader header;
     getPacket(&header, (void *)&received);
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
     free(data);
     if(getLastErrorCode() == PERR_NOERR) {
       free(received.t1);

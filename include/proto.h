@@ -1,4 +1,4 @@
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -40,7 +40,7 @@ typedef uint32_t packetId_t;
 typedef volatile struct __attribute((packed)) {
   packetId_t id;
   crcHeader_t headerChecksum;
-#ifdef ACK_SEQ_CHECK
+#if defined(ACK_SEQ_CHECK)
   uint8_t seqNumber;
   uint8_t ackNumber;
 #endif
@@ -86,6 +86,6 @@ void hardResetParser();
 int getLastErrorCode();
 
 #endif
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }
 #endif

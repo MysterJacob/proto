@@ -11,7 +11,7 @@ crcData_t getDataCrc(crcData_t crc);
 void resetDataCrc(crcData_t *crc);
 #endif
 
-#ifdef CRC_DEFINE_META
+#if defined(CRC_DEFINE_META)
 const struct {
   const crcData_t init;
   const crcData_t poly;

@@ -72,7 +72,7 @@ void TestErrorDetection(CuTest *tc)
 
     if(errCode == PERR_NOERR || isNewPacketReady() == 1) {
       collisionCount++;
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
       ErrorTestPacket received = {};
       PacketHeader header;
       getPacket(&header, (void *)&received);
@@ -81,7 +81,7 @@ void TestErrorDetection(CuTest *tc)
 #endif
     }
 
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
     free(data);
 #endif
   }
@@ -125,7 +125,7 @@ void TestPacketInJunk(CuTest *tc)
 
     CuAssertIntEquals(tc, 0, strcmp(received.m1, message));
     CuAssertIntEquals(tc, 0, strcmp(received.m2, message));
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
     free(data);
     free(received.m1);
     free(received.m2);

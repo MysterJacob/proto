@@ -36,7 +36,7 @@ void TestDynamicVaruint(CuTest *tc)
 
     value <<= 1;
     value |= 1;
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
     free(data);
 #endif
   }
@@ -74,7 +74,7 @@ void TestDynamicVarint(CuTest *tc)
       value <<= 1;
       value |= 1;
     }
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
     free(data);
 #endif
   }
@@ -102,10 +102,10 @@ void TestDynamicStr(CuTest *tc)
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.message, message));
-#ifdef SAVE_STRING_SIZE
+#if defined(SAVE_STRING_SIZE)
   CuAssertIntEquals(tc, strlen(message), received.message_len);
 #endif
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
   free(data);
   free(received.message);
 #endif
@@ -118,7 +118,7 @@ void TestEmptyString(CuTest *tc)
   printf("running: %s\n", tc->name);
   resetParsing();
   char *message = "";
-#ifdef SAVE_STRING_SIZE
+#if defined(SAVE_STRING_SIZE)
   MultipleDynamicPacket tp = {message, 0, 1234, 4312};
 #else
   MultipleDynamicPacket tp = {message, 0, 1234, 4312};
@@ -139,12 +139,12 @@ void TestEmptyString(CuTest *tc)
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.s, message));
-#ifdef SAVE_STRING_SIZE
+#if defined(SAVE_STRING_SIZE)
   CuAssertIntEquals(tc, strlen(message), received.s_len);
 #endif
   CuAssertIntEquals(tc, tp.vi, received.vi);
   CuAssertIntEquals(tc, tp.vu, received.vu);
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
   free(data);
   free(received.s);
 #endif

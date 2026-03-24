@@ -22,4 +22,3 @@
 #if defined(DATA_CRC_CHECK) && defined(JOIN_DATA_CRC)
 #error Can not calculate data crc and join crc with header
 #endif
-

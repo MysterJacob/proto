@@ -21,7 +21,7 @@ void TestTooLargePacket(CuTest *tc)
 
   MultipleDynamicPacket tp = {.s = message, .vu = 0x1001, .vi = 0x2556};
   size_t size;
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
   byte *data = generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
 #else
   generatePacket(MultipleDynamicPacket_ID, (void *)&tp, &size);
@@ -30,7 +30,7 @@ void TestTooLargePacket(CuTest *tc)
   const int errCode = getLastErrorCode();
   CuAssertIntEquals(tc, PERR_PACKET_TOO_LARGE, errCode);
   CuAssertTrue(tc, isNewPacketReady() == 0);
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
   free(data);
 #endif
 }

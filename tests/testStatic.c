@@ -23,7 +23,7 @@ void TestEmptyPacket(CuTest *tc)
   CuAssertIntEquals(tc, TestPacket0_ID, header.id);
   CuAssertIntEquals(tc, 0, header.length);
 
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
   free(data);
 #endif
 }
@@ -52,7 +52,7 @@ void TestStatic(CuTest *tc)
     CuAssertIntEquals(tc, TestPacket2_ID, header.id);
     CuAssertIntEquals(tc, 11, header.length);
 
-#ifdef SKIP_PACKET_LEN
+#if defined(SKIP_PACKET_LEN)
     CuAssertIntEquals(tc, PACKET_HEADER_LENGTH + 11 - sizeof(packetLen_t),
                       size);
 #else
@@ -62,7 +62,7 @@ void TestStatic(CuTest *tc)
     CuAssertIntEquals(tc, testPacket.sampleu8, received.sampleu8);
     CuAssertIntEquals(tc, testPacket.sample16, received.sample16);
     CuAssertIntEquals(tc, testPacket.sampleU32, received.sampleU32);
-#ifdef MALLOC_ALLOCATOR
+#if defined(MALLOC_ALLOCATOR)
     free(data);
 #endif
   }

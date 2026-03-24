@@ -131,7 +131,7 @@ if(NF > 2){
     if(($(i + 1) ~ regex)){
       printf "\t%s %s;\n", $(i + 1), $i, $i
     }
-    if(($(i + 1) == "STRING")){ printf "#ifdef SAVE_STRING_SIZE\nsize_t %s_len;\n#endif\n", $i }
+  if(($(i + 1) == "STRING")){ printf "#if defined(SAVE_STRING_SIZE)\nsize_t %s_len;\n#endif\n", $i }
   }
   printf "} %s;\n", $2
 }

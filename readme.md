@@ -1,7 +1,7 @@
 ﻿# Proto (parser/generator)
 
 Used to serialize and deserialize packets for communicating between devices. Highly configurable to suit different project.
-Configuration is done via a makefile at compile time; the result is a ready to use communication protocol
+Configuration is done via a makefile at compile time; the result is a ready to use communication protocol.
 
 
 # Usage
@@ -103,6 +103,9 @@ int main() {
 Run ``./pythoncreator.sh configFile proto.py output.py``
 
 ### TODO
+<details>
+<summary>pre-1.0</summary>
+
 - [x] Parsing static packets
 - [x] Generating static packets
 - [x] Generating dynamic packets
@@ -119,7 +122,9 @@ Run ``./pythoncreator.sh configFile proto.py output.py``
 - [x] Skiping length for constant size packets
 - [x] Preamble change from config level
 - [x] Joint crc for short packets
-- [ ] Final refactoring
+- [x] Final refactoring
+
+</details>
 
 ### Planned features
 - Transferring blobs of binary data

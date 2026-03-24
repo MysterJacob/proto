@@ -1,11 +1,11 @@
-#ifdef HEADER_CRC_ALGO
+#if defined(HEADER_CRC_ALGO)
 #define CRC_ALGO HEADER_CRC_ALGO
 
 #include "crc/tables.h"
 typedef CRC_DTYPE crcHeader_t;
 
 #ifndef HEADER_COMPILATION
-#ifdef JOIN_DATA_CRC
+#if defined(JOIN_DATA_CRC)
 typedef CRC_DTYPE crcData_t;
 #endif
 #if HEADER_CRC_ALGO != DATA_CRC_ALGO || defined(JOIN_DATA_CRC)
@@ -16,7 +16,7 @@ void resetHeaderCrc(crcHeader_t *crc);
 void updateHeaderCrc(crcHeader_t *crc, uint8_t data);
 crcHeader_t getHeaderCrc(crcHeader_t crc);
 #endif
-#ifdef CRC_DEFINE_META
+#if defined(CRC_DEFINE_META)
 const struct {
   const crcHeader_t init;
   const crcHeader_t poly;
