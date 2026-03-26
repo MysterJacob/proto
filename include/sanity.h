@@ -1,4 +1,4 @@
-#if !defined(DATA_CRC_CHECK) && defined(JOIN_DATA_CRC)
+#if !defined(DATA_CRC_CHECK) && !defined(JOIN_DATA_CRC)
 #warning Data checksum validation disabled!
 #endif
 

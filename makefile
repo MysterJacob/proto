@@ -25,8 +25,8 @@ TEST_FILES = $(patsubst $(TEST_SOURCES_DIR)configs/%.cfg, $(TEST_DIR)%.o, $(TEST
 SOURCES = $(wildcard $(SRC_DIR)*.c)
 OBJ_FILES = $(patsubst $(SRC_DIR)%.c, $(OBJ_DIR)%.o, $(SOURCES))
 
-SO_FILE = $(LIB_DIR)proto.so
-AR_FILE = $(LIB_DIR)proto.ar
+SO_FILE = $(LIB_DIR)libproto.so
+AR_FILE = $(LIB_DIR)libproto.a
 
 TARGET_HEADER = $(LIB_DIR)proto.h
 PYTHON_FILE = $(LIB_DIR)proto.py
@@ -49,7 +49,7 @@ $(CONFIG_DIR)%.cfg $(TEST_CONFIG_DIR)%.cfg: $(BUILD_DIR)
 	@awk -i inplace -F" " 'BEGINFILE{print "#define CONFIG_NAME $@\n#include <stdint.h>\n#include <stddef.h>"} /^[^#]/{print $0}' $(TARGET_HEADER)
 
 $(SO_FILE): $(BUILD_DIR) $(CONFIG) $(OBJ_FILES)
-	$(CC) $(COMPILE_FLAGS) -shared -o $(LIB_DIR)libproto.so $(OBJ_FILES)
+	$(CC) $(COMPILE_FLAGS) -shared -o $(SO_FILE) $(OBJ_FILES)
 	$(AR) rvs $(AR_FILE) $(OBJ_FILES)
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG) $(INCLUDE_DIR)config.h
