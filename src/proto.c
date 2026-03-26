@@ -33,8 +33,8 @@ struct {
   uint8_t newReady;
   packetId_t id;
   size_t requiredSize;
-  size_t csize;
-  size_t clen;
+  size_t size;
+  size_t len;
 #if defined(DATA_CRC_CHECK) || defined(JOIN_DATA_CRC)
   crcData_t crc;
 #endif
@@ -113,8 +113,8 @@ void freeLastPacket()
 #endif
 
   pkt.newReady = 0;
-  pkt.clen = 0;
-  pkt.csize = 0;
+  pkt.len = 0;
+  pkt.size = 0;
   pkt.requiredSize = 0;
 
   for(size_t i = 0; i < sizeof(PacketHeader); i++) {
@@ -123,35 +123,35 @@ void freeLastPacket()
 }
 void writeBuffer(const uint8_t *data, size_t size)
 {
-  if(pkt.csize + size > pkt.requiredSize) {
+  if(pkt.size + size > pkt.requiredSize) {
     reportError(PERR_BUFFER_OVERFLOW);
     return;
   }
 #if defined(BUFFER_ALLOCATOR)
-  if(pkt.csize + size > DATA_BUFFER_SIZE) {
+  if(pkt.size + size > DATA_BUFFER_SIZE) {
     reportError(PERR_BUFFER_OVERFLOW);
     return;
   }
 #endif
-  pkt.csize += size;
+  pkt.size += size;
   for(size_t i = 0; i < size; i++) {
     *(pkt.writer++) = *data++;
   }
 }
 void writeByte(const uint8_t data)
 {
-  if(pkt.csize >= pkt.requiredSize) {
+  if(pkt.size >= pkt.requiredSize) {
     reportError(PERR_BUFFER_OVERFLOW);
     return;
   }
 #if defined(BUFFER_ALLOCATOR)
-  if(pkt.csize >= DATA_BUFFER_SIZE) {
+  if(pkt.size >= DATA_BUFFER_SIZE) {
     reportError(PERR_BUFFER_OVERFLOW);
     return;
   }
 #endif
   *(pkt.writer++) = data;
-  pkt.csize++;
+  pkt.size++;
 }
 
 static inline void parseHeaderData(const uint8_t data)
@@ -202,7 +202,7 @@ void restartParser()
 
 void finishRecieiving()
 {
-  if(pkt.clen != hdr.u.hdr.length || pkt.csize != pkt.requiredSize) {
+  if(pkt.len != hdr.u.hdr.length || pkt.size != pkt.requiredSize) {
     reportError(PERR_LENGTH_MISMATCH);
     return;
   }
@@ -573,9 +573,9 @@ void processByte(const uint8_t data)
 #endif
       writeByte(data);
       if(lstErrCode) return;
-      pkt.clen++;
+      pkt.len++;
 
-      if(pkt.clen == packetStaticSizes[pkt.id]) {
+      if(pkt.len == packetStaticSizes[pkt.id]) {
         finishStaticParsing();
       }
 
@@ -590,8 +590,8 @@ void processByte(const uint8_t data)
       processDynamicData(data);
 
       if(lstErrCode) return;
-      pkt.clen++;
-      if(*pkt.dynamicFieldPointer == 0x0 || pkt.clen >= hdr.u.hdr.length) {
+      pkt.len++;
+      if(*pkt.dynamicFieldPointer == 0x0 || pkt.len >= hdr.u.hdr.length) {
         finishRecieiving();
       }
 
@@ -915,8 +915,8 @@ void resetParsing()
   hdr.preamblePointer = 0;
 
   pkt.id = 0;
-  pkt.clen = 0;
-  pkt.csize = 0;
+  pkt.len = 0;
+  pkt.size = 0;
   pkt.dynamicFieldPointer = 0;
   pkt.requiredSize = 0;
 #if defined(DATA_CRC_CHECK)

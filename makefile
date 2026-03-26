@@ -1,18 +1,19 @@
 SHELL := bash
 
 CC ?= gcc
+AR ?= ar
 CONFIG ?= config.cfg
 CONFIG_DIR = $(dir, $(CONFIG))
 
 COMPILE_FLAGS = -Wall -Wextra -Os -pedantic --std=c2x
 DEBUG_FLAGS = -Wall -Wextra -g3 -pg -pedantic --std=c2x
 
+SRC_DIR = src/
 INCLUDE_DIR = include/
 BUILD_DIR = bin/
 LIB_DIR = $(BUILD_DIR)lib/
 OBJ_DIR = $(BUILD_DIR)obj/
 TEST_DIR = $(BUILD_DIR)tests/
-SRC_DIR = src/
 
 CUTEST_DIR = cutest-1.5/
 TEST_SOURCES_DIR = tests/
@@ -49,7 +50,7 @@ $(CONFIG_DIR)%.cfg $(TEST_CONFIG_DIR)%.cfg: $(BUILD_DIR)
 
 $(SO_FILE): $(BUILD_DIR) $(CONFIG) $(OBJ_FILES)
 	$(CC) $(COMPILE_FLAGS) -shared -o $(LIB_DIR)libproto.so $(OBJ_FILES)
-	ar rvs $(AR_FILE) $(OBJ_FILES)
+	$(AR) rvs $(AR_FILE) $(OBJ_FILES)
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG) $(INCLUDE_DIR)config.h
 	$(CC) $(COMPILE_FLAGS) -I$(INCLUDE_DIR) -c -fPIC $< -o $@
