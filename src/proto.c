@@ -21,13 +21,13 @@ extern const datatype *const parserTable[];
 protoErrorCode lstErrCode = 0;
 
 struct {
+  size_t size;
+  size_t preamblePointer;
   union {
     PacketHeader hdr;
     uint8_t data[sizeof(PacketHeader)];
   } u;
-  size_t size;
-  size_t preamblePointer;
-} hdr = {{}, 0, 0};
+} hdr = {0, 0, {{0}}};
 
 struct {
   uint8_t newReady;
@@ -668,7 +668,7 @@ size_t calculateDynamicSize(const uint32_t id, const void *data)
 
 size_t generateVaruint(VARUINT varuint, uint8_t *packetData)
 {
-  const uint8_t mask = 0b10000000;
+  const uint8_t mask = 128;
   size_t size = 0;
   do {
     packetData[size++] = mask | (varuint & 0x7F);

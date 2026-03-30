@@ -100,7 +100,7 @@ int main() {
 
 ### Python API (Experimental)
 
-Run ``./pythoncreator.sh configFile proto.py output.py``
+Run ``make python``
 
 ### TODO
 <details>

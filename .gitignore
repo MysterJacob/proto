@@ -13,3 +13,4 @@ gmon.out
 **/*.o
 **/lib/
 /tests/configs/debug.cfg
+proto.py

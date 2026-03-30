@@ -5,7 +5,7 @@ AR ?= ar
 CONFIG ?= config.cfg
 CONFIG_DIR = $(dir, $(CONFIG))
 
-COMPILE_FLAGS = -Wall -Wextra -Os -pedantic --std=c2x
+COMPILE_FLAGS = -Wall -Wextra -Os -pedantic
 DEBUG_FLAGS = -Wall -Wextra -g3 -pg -pedantic --std=c2x
 
 SRC_DIR = src/
@@ -33,7 +33,7 @@ PYTHON_FILE = $(LIB_DIR)proto.py
 
 .FORCE:
 default: $(CONFIG) $(SO_FILE)
-all: $(SO_FILE) $(PYTHON_FILE)
+python: $(PYTHON_FILE)
 
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
@@ -54,6 +54,9 @@ $(SO_FILE): $(BUILD_DIR) $(CONFIG) $(OBJ_FILES)
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG) $(INCLUDE_DIR)config.h
 	$(CC) $(COMPILE_FLAGS) -I$(INCLUDE_DIR) -c -fPIC $< -o $@
+
+$(PYTHON_FILE): $(SO_FILE)
+	./pythoncreator.sh $(CONFIG) proto_template.py $(PYTHON_FILE)
 
 $(TEST_DIR)%.o: $(TEST_CONFIG_DIR)%.cfg $(TEST_SOURCES)
 	@mkdir -p $(BUILD_DIR)tmp/
@@ -79,6 +82,7 @@ $(TEST_DIR)%.o: $(TEST_CONFIG_DIR)%.cfg $(TEST_SOURCES)
 
 	@rm -rf $(BUILD_DIR)tmp/
 
+
 .PHONY:
 test: $(BUILD_DIR) $(TEST_FILES)
 	@for testFile in $(TEST_FILES); do \
@@ -93,6 +97,7 @@ clean:
 	rm -f debug
 	rm -f gmon.out
 	rm -f include/config.h include/packets.h include/parserTables.h
+	rm -f $(PYTHON_FILE)
 
 .PHONY:
 debug: $(TEST_DIR)debug.o
