@@ -213,6 +213,12 @@ void finishRecieiving()
     return;
   }
 #endif
+#if defined(JOIN_DATA_CRC)
+  if(getHeaderCrc(pkt.crc) != hdr.u.hdr.headerChecksum) {
+    reportError(PERR_DATA_CRC_MISMATCH);
+    return;
+  }
+#endif
 
 #if defined(ACK_SEQ_CHECK)
   if(hdr.u.hdr.seqNumber != totalPacketsReceived) {
@@ -764,8 +770,8 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
   const size_t headerSize = sizeof(PacketHeader);
 #endif
 
-  const size_t datalength = staticLength + dynamicLength;
-  const size_t totalSize = datalength + headerSize + PREAMBLE_SIZE;
+  const size_t dataLength = staticLength + dynamicLength;
+  const size_t totalSize = dataLength + headerSize + PREAMBLE_SIZE;
 
   if(totalSize > MAX_PACKET_SIZE) {
     reportError(PERR_PACKET_TOO_LARGE);
@@ -806,22 +812,25 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
       .ackNumber = totalPacketsReceived,
 #endif
 #if defined(DATA_CRC_CHECK)
-      .dataChecksum = calculateDataCrc(dataPtr, datalength),
+      .dataChecksum = calculateDataCrc(dataPtr, dataLength),
 #endif
-      .length = datalength,
+      .length = dataLength,
   };
 
 #if defined(JOIN_DATA_CRC)
-  resetHeaderCrc((crcHeader_t *)&genHdr.headerChecksum);
+  crcHeader_t headerChecksum;
+
+  resetHeaderCrc(&headerChecksum);
   uint8_t *crcPointer = (uint8_t *)&genHdr;
 
-  for(size_t i = 0; i < headerSize; i++) {
-    updateHeaderCrc((crcHeader_t *)&genHdr.headerChecksum, *crcPointer++);
+  for(size_t i = 0; i < sizeof(PacketHeader); i++) {
+    updateHeaderCrc(&headerChecksum, *crcPointer++);
   }
 
-  for(size_t i = 0; i < datalength; i++) {
-    updateHeaderCrc((crcHeader_t *)&genHdr.headerChecksum, dataPtr[i]);
+  for(size_t i = 0; i < dataLength; i++) {
+    updateHeaderCrc(&headerChecksum, dataPtr[i]);
   }
+  genHdr.headerChecksum = headerChecksum;
 #else
   genHdr.headerChecksum =
       calculateHeaderCrc((void *)&genHdr, sizeof(PacketHeader));

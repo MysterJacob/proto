@@ -48,5 +48,7 @@ void TestMemory(CuTest *tc)
     }
 #endif
   }
+#else
+  printf("skipping: %s\n", tc->name);
 #endif
 }
