@@ -31,9 +31,9 @@ DEF SimplePacket Field1 INT8 Field2 STRING
 Create file named `config.cfg` with config values and run ``make``.
 
 Compiled files are placed in `bin/lib`:
-- `proto.ar` static .ar packed library
+- `libproto.a` static library
 - `proto.h` header file containing all the definitions
-- `proto.so` dynamic .so library
+- `libproto.so` dynamic library
 
 ### Usage
 
