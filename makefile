@@ -5,7 +5,9 @@ AR ?= ar
 CONFIG ?= config.cfg
 CONFIG_DIR = $(dir, $(CONFIG))
 
-COMPILE_FLAGS = -Wall -Wextra -Os -pedantic
+
+EXTRA_FLAGS ?= 
+COMPILE_FLAGS = -Wall -Wextra -Os -pedantic -fPIC $(EXTRA_FLAGS)
 DEBUG_FLAGS = -Wall -Wextra -g3 -pg -pedantic --std=c2x
 
 SRC_DIR = src/
@@ -32,7 +34,7 @@ TARGET_HEADER = $(LIB_DIR)proto.h
 PYTHON_FILE = $(LIB_DIR)proto.py
 
 .FORCE:
-default: $(CONFIG) $(SO_FILE)
+default: $(CONFIG) $(SO_FILE) $(AR_FILE)
 python: $(PYTHON_FILE)
 
 $(BUILD_DIR):
@@ -50,10 +52,12 @@ $(CONFIG_DIR)%.cfg $(TEST_CONFIG_DIR)%.cfg: $(BUILD_DIR)
 
 $(SO_FILE): $(BUILD_DIR) $(CONFIG) $(OBJ_FILES)
 	$(CC) $(COMPILE_FLAGS) -shared -o $(SO_FILE) $(OBJ_FILES)
+
+$(AR_FILE): $(BUILD_DIR) $(CONFIG) $(OBJ_FILES)
 	$(AR) rvs $(AR_FILE) $(OBJ_FILES)
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG) $(INCLUDE_DIR)config.h
-	$(CC) $(COMPILE_FLAGS) -I$(INCLUDE_DIR) -c -fPIC $< -o $@
+	$(CC) $(COMPILE_FLAGS)  -I$(INCLUDE_DIR) -c $< -o $@
 
 $(PYTHON_FILE): $(SO_FILE)
 	./pythoncreator.sh $(CONFIG) proto_template.py $(PYTHON_FILE)
