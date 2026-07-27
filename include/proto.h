@@ -37,7 +37,7 @@ typedef uint32_t packetId_t;
 #error Too many packets!
 #endif
 
-typedef volatile struct __attribute((packed)) {
+typedef volatile struct __attribute__((packed)) {
   packetId_t id;
   crcHeader_t headerChecksum;
 #if defined(ACK_SEQ_CHECK)
