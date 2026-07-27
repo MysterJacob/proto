@@ -1,10 +1,10 @@
 SHELL := bash
 
+PLATFORM ?= 
 CC ?= gcc
 AR ?= ar
 CONFIG ?= config.cfg
 CONFIG_DIR = $(dir, $(CONFIG))
-
 
 EXTRA_FLAGS ?= 
 COMPILE_FLAGS = -Wall -Wextra -Os -pedantic -fPIC $(EXTRA_FLAGS)
@@ -12,7 +12,7 @@ DEBUG_FLAGS = -Wall -Wextra -g3 -pg -pedantic --std=c2x
 
 SRC_DIR = src/
 INCLUDE_DIR = include/
-BUILD_DIR = bin/
+BUILD_DIR = bin/$(PLATFORM)/
 LIB_DIR = $(BUILD_DIR)lib/
 OBJ_DIR = $(BUILD_DIR)obj/
 TEST_DIR = $(BUILD_DIR)tests/
@@ -35,7 +35,7 @@ PYTHON_FILE = $(LIB_DIR)proto.py
 
 .FORCE:
 default: $(CONFIG) $(SO_FILE) $(AR_FILE)
-python: $(PYTHON_FILE)
+python: $(BUILD_DIR) $(PYTHON_FILE)
 
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
