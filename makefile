@@ -12,10 +12,12 @@ DEBUG_FLAGS = -Wall -Wextra -g3 -pg -pedantic --std=c2x
 
 SRC_DIR = src/
 INCLUDE_DIR = include/
-BUILD_DIR = bin/$(PLATFORM)/
-LIB_DIR = $(BUILD_DIR)lib/
-OBJ_DIR = $(BUILD_DIR)obj/
-TEST_DIR = $(BUILD_DIR)tests/
+BUILD_DIR = bin/
+PLATFORM_DIR = $(BUILD_DIR)$(PLATFORM)/
+LIB_DIR = $(PLATFORM_DIR)lib/
+OBJ_DIR = $(PLATFORM_DIR)obj/
+TEST_DIR = $(PLATFORM_DIR)tests/
+PYTHON_SRC_DIR = python/
 
 CUTEST_DIR = cutest-1.5/
 TEST_SOURCES_DIR = tests/
@@ -31,48 +33,58 @@ SO_FILE = $(LIB_DIR)libproto.so
 AR_FILE = $(LIB_DIR)libproto.a
 
 TARGET_HEADER = $(LIB_DIR)proto.h
-PYTHON_FILE = $(LIB_DIR)proto.py
+PYTHON_DIR = $(BUILD_DIR)python/
+PYTHON_FILE = $(PYTHON_DIR)proto.py
 
 .FORCE:
 default: $(CONFIG) $(SO_FILE) $(AR_FILE)
-python: $(BUILD_DIR) $(PYTHON_FILE)
+
+.PHONY:
+python-bridge:
+	make PLATFORM=python $(PYTHON_FILE)
 
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
+
+$(PYTHON_DIR): $(BUILD_DIR)
+	@mkdir -p $(PYTHON_DIR)
+
+$(PLATFORM_DIR): $(BUILD_DIR)
+	@mkdir -p $(PLATFORM_DIR)
 	@mkdir -p $(LIB_DIR)
 	@mkdir -p $(OBJ_DIR)
 	@mkdir -p $(TEST_DIR)
 
 .FORCE:
-$(CONFIG_DIR)%.cfg $(TEST_CONFIG_DIR)%.cfg: $(BUILD_DIR)
+$(CONFIG_DIR)%.cfg $(TEST_CONFIG_DIR)%.cfg: $(PLATFORM_DIR)
 	@./creator.sh $@ $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
 	@gcc -I$(INCLUDE_DIR) -nostdlib -DHEADER_COMPILATION -E include/proto.h -o $(TARGET_HEADER)
 	@awk -i inplace -F" " 'BEGINFILE{print "#define CONFIG_NAME $@\n#include <stdint.h>\n#include <stddef.h>"} /^[^#]/{print $0}' $(TARGET_HEADER)
 
-$(SO_FILE): $(BUILD_DIR) $(CONFIG) $(OBJ_FILES)
+$(SO_FILE): $(PLATFORM_DIR) $(CONFIG) $(OBJ_FILES)
 	$(CC) $(COMPILE_FLAGS) -shared -o $(SO_FILE) $(OBJ_FILES)
 
-$(AR_FILE): $(BUILD_DIR) $(CONFIG) $(OBJ_FILES)
+$(AR_FILE): $(PLATFORM_DIR) $(CONFIG) $(OBJ_FILES)
 	$(AR) rvs $(AR_FILE) $(OBJ_FILES)
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c $(CONFIG) $(INCLUDE_DIR)config.h
 	$(CC) $(COMPILE_FLAGS)  -I$(INCLUDE_DIR) -c $< -o $@
 
-$(PYTHON_FILE): $(SO_FILE)
-	./pythoncreator.sh $(CONFIG) proto_template.py $(PYTHON_FILE)
+$(PYTHON_FILE): $(PYTHON_DIR)
+	./$(PYTHON_SRC_DIR)/pythoncreator.sh $(CONFIG) $(PYTHON_SRC_DIR)proto_template.py $(PYTHON_FILE)
 
 $(TEST_DIR)%.o: $(TEST_CONFIG_DIR)%.cfg $(TEST_SOURCES)
-	@mkdir -p $(BUILD_DIR)tmp/
+	@mkdir -p $(PLATFORM_DIR)tmp/
 
 	@cp $(TEST_SOURCES) \
 	$(CUTEST_DIR)CuTest.h \
 	$(CUTEST_DIR)make-tests.sh \
-	$(BUILD_DIR)tmp/
+	$(PLATFORM_DIR)tmp/
 
-	@chmod +x $(BUILD_DIR)tmp/make-tests.sh
+	@chmod +x $(PLATFORM_DIR)tmp/make-tests.sh
 
-	@(cd $(BUILD_DIR)tmp ; ./make-tests.sh > AllTests.c)
+	@(cd $(PLATFORM_DIR)tmp ; ./make-tests.sh > AllTests.c)
 
 	@$(CC) $(DEBUG_FLAGS) \
 	$(SOURCES) \
@@ -82,13 +94,13 @@ $(TEST_DIR)%.o: $(TEST_CONFIG_DIR)%.cfg $(TEST_SOURCES)
 	-I$(TEST_SOURCES_DIR) \
 	$(TEST_SOURCES) \
 	$(CUTEST_DIR)CuTest.c \
-	$(BUILD_DIR)tmp/AllTests.c
+	$(PLATFORM_DIR)tmp/AllTests.c
 
-	@rm -rf $(BUILD_DIR)tmp/
+	@rm -rf $(PLATFORM_DIR)tmp/
 
 
 .PHONY:
-test: $(BUILD_DIR) $(TEST_FILES)
+test: $(PLATFORM_DIR) $(TEST_FILES)
 	@for testFile in $(TEST_FILES); do \
 		echo Testing $$testFile ;\
 		./$$testFile; \
@@ -97,7 +109,7 @@ test: $(BUILD_DIR) $(TEST_FILES)
 
 .PHONY:
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(PLATFORM_DIR)
 	rm -f debug
 	rm -f gmon.out
 	rm -f include/config.h include/packets.h include/parserTables.h
