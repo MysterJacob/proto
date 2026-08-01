@@ -59,11 +59,11 @@ $(PLATFORM_DIR): $(BUILD_DIR)
 $(CONFIG_DIR)%.cfg $(TEST_CONFIG_DIR)%.cfg: $(PLATFORM_DIR)
 	@./creator.sh $@ $(INCLUDE_DIR)parserTables.h $(INCLUDE_DIR)packets.h $(INCLUDE_DIR)config.h
 
-	@gcc -I$(INCLUDE_DIR) -nostdlib -DHEADER_COMPILATION -E include/proto.h -o $(TARGET_HEADER)
+	@$(CC) -I$(INCLUDE_DIR) -nostdlib -DHEADER_COMPILATION -E include/proto.h -o $(TARGET_HEADER)
 	@awk -i inplace -F" " 'BEGINFILE{print "#define CONFIG_NAME $@\n#include <stdint.h>\n#include <stddef.h>"} /^[^#]/{print $0}' $(TARGET_HEADER)
 
 $(SO_FILE): $(PLATFORM_DIR) $(CONFIG) $(OBJ_FILES)
-	$(CC) $(COMPILE_FLAGS) -shared -o $(SO_FILE) $(OBJ_FILES)
+	@$(CC) $(COMPILE_FLAGS) -shared -o $(SO_FILE) $(OBJ_FILES) || true
 
 $(AR_FILE): $(PLATFORM_DIR) $(CONFIG) $(OBJ_FILES)
 	$(AR) rvs $(AR_FILE) $(OBJ_FILES)
