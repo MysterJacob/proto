@@ -25,7 +25,7 @@ void TestMultipleDynamic(CuTest *tc)
   CuAssertIntEquals(tc, 0, errCode);
   CuAssertTrue(tc, isNewPacketReady() != 0);
   MultipleDynamicPacket received = {};
-  PacketHeader header;
+  PacketHeader_t header;
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.s, message));

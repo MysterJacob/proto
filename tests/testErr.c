@@ -71,7 +71,7 @@ void TestErrorDetection(CuTest *tc)
       badParsed++;
 #if defined(MALLOC_ALLOCATOR)
       ErrorTestPacket received = {};
-      PacketHeader header;
+      PacketHeader_t header;
       getPacket(&header, (void *)&received);
       free(received.m1);
       free(received.m2);
@@ -123,7 +123,7 @@ void TestPacketInJunk(CuTest *tc)
     CuAssertTrue(tc, isNewPacketReady() == 1);
 
     ErrorTestPacket received = {};
-    PacketHeader header;
+    PacketHeader_t header;
     getPacket(&header, (void *)&received);
 
     CuAssertIntEquals(tc, 0, strcmp(received.m1, message));

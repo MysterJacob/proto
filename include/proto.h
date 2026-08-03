@@ -14,7 +14,7 @@ extern "C" {
 #include "packets.h"
 
 typedef uint8_t byte;
-#define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader) + PREAMBLE_SIZE)
+#define PACKET_HEADER_LENGTH (size_t)(sizeof(PacketHeader_t) + PREAMBLE_SIZE)
 
 #include "crc.h"
 #if MAX_PACKET_SIZE < 256
@@ -49,7 +49,7 @@ typedef volatile struct __attribute__((packed)) {
   crcData_t dataChecksum;
 #endif
   packetLen_t length;
-} PacketHeader;
+} PacketHeader_t;
 
 typedef enum {
   PERR_NOERR = 0,
@@ -63,7 +63,7 @@ typedef enum {
   PERR_HDR_CRC_MISMATCH = 8,
   PERR_UNEXPECTED_NULL = 9,
   PERR_PACKET_TOO_LARGE = 10,
-} protoErrorCode;
+} ProtoErrorCode_t;
 
 void processByte(const byte data);
 
@@ -73,12 +73,12 @@ byte *getLastGeneratedPacket();
 int isNewPacketReady();
 size_t getPacketLength();
 size_t getPacketStructureSize();
-uint32_t getPacket(PacketHeader *header, void *packetData);
+uint32_t getPacket(PacketHeader_t *header, void *packetData);
 
-typedef void (*PacketHandler)(const PacketHeader header, void *packetData);
+typedef void (*PacketHandler)(const PacketHeader_t header, void *packetData);
 void setPacketCallback(PacketHandler handler);
 
-typedef void (*ErrorHandler)(const protoErrorCode errorCode);
+typedef void (*ErrorHandler)(const ProtoErrorCode_t errorCode);
 void setErrorCallback(ErrorHandler handler);
 
 void resetParsing();

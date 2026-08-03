@@ -18,14 +18,14 @@ extern "C" {
 
 extern const datatype *const parserTable[];
 
-protoErrorCode lstErrCode = 0;
+ProtoErrorCode_t lstErrCode = 0;
 
 struct {
   size_t size;
   size_t preamblePointer;
   union {
-    PacketHeader hdr;
-    uint8_t data[sizeof(PacketHeader)];
+    PacketHeader_t hdr;
+    uint8_t data[sizeof(PacketHeader_t)];
   } u;
 } hdr = {0, 0, {{0}}};
 
@@ -67,7 +67,7 @@ ErrorHandler errCallback = NULL;
 uint32_t totalPacketsSent = 0;
 uint32_t totalPacketsReceived = 0;
 #endif
-protoErrorCode reportError(const protoErrorCode code)
+ProtoErrorCode_t reportError(const ProtoErrorCode_t code)
 {
   resetParsing();
   lstErrCode = code;
@@ -117,7 +117,7 @@ void freeLastPacket()
   pkt.size = 0;
   pkt.requiredSize = 0;
 
-  for(size_t i = 0; i < sizeof(PacketHeader); i++) {
+  for(size_t i = 0; i < sizeof(PacketHeader_t); i++) {
     hdr.u.data[i] = 0x00;
   }
 }
@@ -158,10 +158,10 @@ static inline void parseHeaderData(const uint8_t data)
 {
   hdr.u.data[hdr.size++] = data;
 #if defined(SKIP_PACKET_LEN)
-  if(hdr.size == sizeof(PacketHeader) - sizeof(packetLen_t) &&
+  if(hdr.size == sizeof(PacketHeader_t) - sizeof(packetLen_t) &&
      hdr.u.hdr.id <= PACKET_COUNT && packetDynamicCount[hdr.u.hdr.id] == 0) {
     hdr.u.hdr.length = packetStaticSizes[hdr.u.hdr.id];
-    hdr.size = sizeof(PacketHeader);
+    hdr.size = sizeof(PacketHeader_t);
     return;
   }
 #endif
@@ -248,12 +248,12 @@ void finishHeaderParsing()
   hdr.u.hdr.headerChecksum = 0x0000;
 #if defined(JOIN_DATA_CRC)
   resetHeaderCrc(&pkt.crc);
-  for(size_t i = 0; i < sizeof(PacketHeader); i++) {
+  for(size_t i = 0; i < sizeof(PacketHeader_t); i++) {
     updateHeaderCrc(&pkt.crc, hdr.u.data[i]);
   }
 #else
   const crcHeader_t calculatedHdrCrc =
-      calculateHeaderCrc(hdr.u.data, sizeof(PacketHeader));
+      calculateHeaderCrc(hdr.u.data, sizeof(PacketHeader_t));
 #endif
   hdr.u.hdr.headerChecksum = prsHdrCrc;
 
@@ -565,7 +565,7 @@ void processByte(const uint8_t data)
 #endif
     case PSTATUS_HEADER:
       parseHeaderData(data);
-      if(hdr.size == sizeof(PacketHeader)) {
+      if(hdr.size == sizeof(PacketHeader_t)) {
         finishHeaderParsing();
       }
 
@@ -765,9 +765,9 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
 
 #if defined(SKIP_PACKET_LEN)
   const size_t headerSize =
-      sizeof(PacketHeader) - (dynamicLength == 0 ? sizeof(packetLen_t) : 0);
+      sizeof(PacketHeader_t) - (dynamicLength == 0 ? sizeof(packetLen_t) : 0);
 #else
-  const size_t headerSize = sizeof(PacketHeader);
+  const size_t headerSize = sizeof(PacketHeader_t);
 #endif
 
   const size_t dataLength = staticLength + dynamicLength;
@@ -804,7 +804,7 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
     generateDynamicData(id, data, staticLength, dataPtr);
   }
 
-  PacketHeader genHdr = {
+  PacketHeader_t genHdr = {
       .id = id,
       .headerChecksum = 0x0000,
 #if defined(ACK_SEQ_CHECK)
@@ -823,7 +823,7 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
   resetHeaderCrc(&headerChecksum);
   uint8_t *crcPointer = (uint8_t *)&genHdr;
 
-  for(size_t i = 0; i < sizeof(PacketHeader); i++) {
+  for(size_t i = 0; i < sizeof(PacketHeader_t); i++) {
     updateHeaderCrc(&headerChecksum, *crcPointer++);
   }
 
@@ -833,7 +833,7 @@ uint8_t *generatePacket(const packetId_t id, const void *data, size_t *size)
   genHdr.headerChecksum = headerChecksum;
 #else
   genHdr.headerChecksum =
-      calculateHeaderCrc((void *)&genHdr, sizeof(PacketHeader));
+      calculateHeaderCrc((void *)&genHdr, sizeof(PacketHeader_t));
 #endif
 
   memcpy(genPkt + PREAMBLE_SIZE, (void *)&genHdr, headerSize);
@@ -873,7 +873,7 @@ size_t getPacketStructureSize()
   return packetStructSizes[hdr.u.hdr.id];
 }
 
-uint32_t getPacket(PacketHeader *rheader, void *rpacketData)
+uint32_t getPacket(PacketHeader_t *rheader, void *rpacketData)
 {
   if(pkt.newReady == 0) return -1;
   if(rheader != NULL) {
@@ -937,7 +937,7 @@ void resetParsing()
 
 int getLastErrorCode()
 {
-  protoErrorCode cpy = lstErrCode;
+  ProtoErrorCode_t cpy = lstErrCode;
   lstErrCode = PERR_NOERR;
   return cpy;
 }

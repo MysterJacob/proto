@@ -28,7 +28,7 @@ void TestDynamicVaruint(CuTest *tc)
 
     CuAssertTrue(tc, isNewPacketReady() != 0);
     TestPacket4 received = {};
-    PacketHeader header;
+    PacketHeader_t header;
     getPacket(&header, (void *)&received);
 
     CuAssertIntEquals(tc, 0xFF - i, received.test1);
@@ -64,7 +64,7 @@ void TestDynamicVarint(CuTest *tc)
     CuAssertIntEquals(tc, 0, errCode);
     CuAssertTrue(tc, isNewPacketReady() != 0);
     TestPacket5 received = {};
-    PacketHeader header;
+    PacketHeader_t header;
     getPacket(&header, (void *)&received);
     CuAssertIntEquals(tc, 0xFF - i, received.test1);
     CuAssertIntEquals(tc, value * sign, received.varint);
@@ -98,7 +98,7 @@ void TestDynamicStr(CuTest *tc)
   CuAssertIntEquals(tc, 0, errCode);
   CuAssertTrue(tc, isNewPacketReady() != 0);
   StringParsingTest received = {};
-  PacketHeader header;
+  PacketHeader_t header;
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.message, message));
@@ -135,7 +135,7 @@ void TestEmptyString(CuTest *tc)
   CuAssertIntEquals(tc, 0, errCode);
   CuAssertTrue(tc, isNewPacketReady() != 0);
   MultipleDynamicPacket received = {};
-  PacketHeader header;
+  PacketHeader_t header;
   getPacket(&header, (void *)&received);
 
   CuAssertIntEquals(tc, 0, strcmp(received.s, message));

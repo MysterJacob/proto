@@ -17,7 +17,7 @@ void TestEmptyPacket(CuTest *tc)
   }
   CuAssertIntEquals(tc, 0, getLastErrorCode());
   CuAssertTrue(tc, isNewPacketReady() != 0);
-  PacketHeader header;
+  PacketHeader_t header;
   getPacket(&header, 0);
 
   CuAssertIntEquals(tc, TestPacket0_ID, header.id);
@@ -46,7 +46,7 @@ void TestStatic(CuTest *tc)
     CuAssertIntEquals(tc, 0, getLastErrorCode());
     CuAssertTrue(tc, isNewPacketReady() != 0);
     TestPacket2 received = {};
-    PacketHeader header;
+    PacketHeader_t header;
     getPacket(&header, (void *)&received);
 
     CuAssertIntEquals(tc, TestPacket2_ID, header.id);

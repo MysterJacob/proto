@@ -38,7 +38,7 @@ void TestMemory(CuTest *tc)
     }
 
     MemoryTestPacket received = {};
-    PacketHeader header;
+    PacketHeader_t header;
     getPacket(&header, (void *)&received);
 #if defined(MALLOC_ALLOCATOR)
     free(data);
